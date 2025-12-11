@@ -384,23 +384,55 @@
     justify-content: center;
   }
 
-  /* Responsive */
-  @media (max-width: 768px) {
-    .comparison-grid, .demo-container {
-      grid-template-columns: 1fr;
-    }
+  /* Responsive - Tablet */
+  @media (max-width: 1024px) {
     .features-grid {
-      grid-template-columns: 1fr;
-    }
-    .stats-grid {
       grid-template-columns: repeat(2, 1fr);
     }
-    .flow-container {
-      flex-direction: column;
-    }
-    .flow-arrow {
-      transform: rotate(90deg);
-    }
+  }
+
+  /* Responsive - Mobile */
+  @media (max-width: 768px) {
+    .features-hero { padding: 60px 0 40px; }
+    .features-hero h1 { font-size: 2rem; }
+    .features-hero .lead { font-size: 1rem; padding: 0 16px; }
+
+    .comparison-section { padding: 40px 0; }
+    .comparison-section h2 { font-size: 1.5rem; margin-bottom: 32px; }
+    .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
+    .comparison-card { padding: 24px; }
+    .comparison-card h3 { font-size: 1.125rem; }
+
+    .flow-section { padding: 60px 0; }
+    .flow-section h2 { font-size: 1.5rem; }
+    .flow-section .subtitle { margin-bottom: 40px; }
+    .flow-container { flex-direction: column; gap: 16px; }
+    .flow-step { width: 100%; max-width: 280px; padding: 20px; }
+    .flow-arrow { transform: rotate(90deg); margin: 8px 0; }
+
+    .features-grid-section { padding: 60px 0; }
+    .features-grid-section h2 { font-size: 1.5rem; margin-bottom: 32px; }
+    .features-grid { grid-template-columns: 1fr; gap: 16px; }
+    .feature-card { padding: 24px; }
+    .feature-card:hover { transform: none; }
+
+    .demo-section { padding: 60px 0; }
+    .demo-section h2 { font-size: 1.5rem; }
+    .demo-section .subtitle { margin-bottom: 32px; font-size: 0.9rem; }
+    .demo-container { grid-template-columns: 1fr; gap: 24px; }
+    .demo-form { padding: 24px; }
+    .demo-output { padding: 24px; }
+    .demo-output pre { font-size: 0.7rem; padding: 12px; max-height: 250px; }
+
+    .stats-section { padding: 40px 0; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .stat-item h3 { font-size: 2rem; }
+    .stat-item p { font-size: 0.875rem; }
+
+    .cta-section { padding: 60px 0; }
+    .cta-section h2 { font-size: 1.5rem; }
+    .cta-buttons { flex-direction: column; align-items: center; }
+    .cta-buttons .btn { width: 100%; max-width: 280px; }
   }
 </style>
 

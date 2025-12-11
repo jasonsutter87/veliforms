@@ -98,6 +98,14 @@
   .message.show {
     display: block;
   }
+
+  /* Mobile styles */
+  @media (max-width: 768px) {
+    .auth-page { padding: 24px 16px; min-height: calc(100vh - 160px); }
+    .auth-card { padding: 24px; }
+    .auth-card h1 { font-size: 1.5rem; }
+    .auth-card .subtitle { margin-bottom: 24px; font-size: 0.875rem; }
+  }
 </style>
 
 <div class="auth-page">

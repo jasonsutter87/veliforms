@@ -1,47 +1,79 @@
 {{ define "main" }}
-<section style="padding: 100px 0; text-align: center;">
+<style>
+  .hero { padding: 100px 0; text-align: center; }
+  .hero h1 { font-size: 3.5rem; margin-bottom: 24px; line-height: 1.1; }
+  .hero p { font-size: 1.25rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 40px; }
+  .hero-buttons { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+
+  .how-it-works { padding: 80px 0; background: var(--surface); }
+  .how-it-works h2 { text-align: center; margin-bottom: 60px; }
+  .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+  .step { text-align: center; }
+  .step-num { font-size: 2rem; margin-bottom: 16px; color: var(--primary); font-weight: 700; }
+  .step h3 { margin-bottom: 12px; }
+  .step p { color: var(--text-muted); }
+
+  .quickstart { padding: 80px 0; }
+  .quickstart h2 { text-align: center; margin-bottom: 40px; }
+  .code-block { background: var(--surface); padding: 24px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); font-size: 0.9rem; }
+
+  @media (max-width: 768px) {
+    .hero { padding: 60px 0; }
+    .hero h1 { font-size: 2.25rem; }
+    .hero p { font-size: 1rem; padding: 0 16px; }
+    .hero-buttons .btn { width: 100%; max-width: 280px; }
+
+    .how-it-works { padding: 60px 0; }
+    .how-it-works h2 { margin-bottom: 40px; }
+    .steps-grid { grid-template-columns: 1fr; gap: 32px; }
+    .step { padding: 0 16px; }
+
+    .quickstart { padding: 60px 0; }
+    .code-block { padding: 16px; font-size: 0.8rem; }
+  }
+</style>
+
+<section class="hero">
   <div class="container">
-    <h1 style="font-size: 3.5rem; margin-bottom: 24px; line-height: 1.1;">
-      Forms that <span style="color: var(--primary);">forget faces</span>
-    </h1>
-    <p style="font-size: 1.25rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 40px;">
+    <h1>Forms that <span style="color: var(--primary);">forget faces</span></h1>
+    <p>
       Client-side encryption. Zero PII storage. Anonymous submissions.<br>
       GDPR compliant by design, not by policy.
     </p>
-    <div>
-      <a href="/signup" class="btn">Start Free</a>
-      <a href="/docs" class="btn btn-outline" style="margin-left: 16px;">View Docs</a>
+    <div class="hero-buttons">
+      <a href="/register/" class="btn">Start Free</a>
+      <a href="/docs/" class="btn btn-outline">View Docs</a>
     </div>
   </div>
 </section>
 
-<section style="padding: 80px 0; background: var(--surface);">
+<section class="how-it-works">
   <div class="container">
-    <h2 style="text-align: center; margin-bottom: 60px;">How it works</h2>
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px;">
-      <div style="text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 16px;">1</div>
-        <h3 style="margin-bottom: 12px;">Encrypt in browser</h3>
-        <p style="color: var(--text-muted);">Data is encrypted client-side before it ever leaves the user's device.</p>
+    <h2>How it works</h2>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Encrypt in browser</h3>
+        <p>Data is encrypted client-side before it ever leaves the user's device.</p>
       </div>
-      <div style="text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 16px;">2</div>
-        <h3 style="margin-bottom: 12px;">Strip PII</h3>
-        <p style="color: var(--text-muted);">Our SDK detects and removes personally identifiable information automatically.</p>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Strip PII</h3>
+        <p>Our SDK detects and removes personally identifiable information automatically.</p>
       </div>
-      <div style="text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 16px;">3</div>
-        <h3 style="margin-bottom: 12px;">Anonymous IDs</h3>
-        <p style="color: var(--text-muted);">Submissions get cryptographic IDs with no link to user identity.</p>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Anonymous IDs</h3>
+        <p>Submissions get cryptographic IDs with no link to user identity.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section style="padding: 80px 0;">
+<section class="quickstart">
   <div class="container">
-    <h2 style="text-align: center; margin-bottom: 40px;">Quick Start</h2>
-    <pre style="background: var(--surface); padding: 24px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border);"><code>&lt;script src="https://veilforms.com/js/veilforms.min.js"&gt;&lt;/script&gt;
+    <h2>Quick Start</h2>
+    <pre class="code-block"><code>&lt;script src="https://veilforms.com/js/veilforms.min.js"&gt;&lt;/script&gt;
 &lt;script&gt;
   VeilForms.init('your-form-id', {
     encryption: true,

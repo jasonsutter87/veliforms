@@ -133,6 +133,50 @@
   .compare-table .veilforms { background: #6366f110; }
   .check { color: #10b981; }
   .cross { color: #ef4444; }
+
+  /* Mobile styles */
+  @media (max-width: 1024px) {
+    .pricing-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .pricing-card.featured {
+      transform: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .pricing-hero { padding: 60px 0 40px; }
+    .pricing-hero h1 { font-size: 2rem; }
+    .pricing-hero p { font-size: 1rem; }
+
+    .pricing-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+      padding: 40px 0;
+    }
+    .pricing-card { padding: 24px; }
+    .plan-price .amount { font-size: 2.5rem; }
+
+    .encryption-banner {
+      padding: 12px 16px;
+      font-size: 0.875rem;
+      margin-bottom: 40px;
+    }
+
+    .competitor-compare { padding: 60px 0; }
+    .competitor-compare h2 { font-size: 1.5rem; }
+    .compare-table-wrapper { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+    .compare-table { min-width: 600px; font-size: 0.8rem; }
+    .compare-table th, .compare-table td { padding: 12px 8px; }
+
+    .faq { padding: 60px 0; }
+    .faq h2 { margin-bottom: 32px; }
+    .faq-grid { grid-template-columns: 1fr; gap: 24px; }
+    .faq-item { padding: 0 8px; }
+
+    .cta-section { padding: 60px 0; }
+    .cta-section h2 { font-size: 1.5rem; }
+  }
 </style>
 
 <section class="pricing-hero">

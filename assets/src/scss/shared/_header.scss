@@ -46,8 +46,8 @@
   }
 }
 
-// Mobile Menu Toggle
-.menu-toggle {
+// Mobile Menu Toggle (hidden on desktop)
+.site-header .menu-toggle {
   display: none;
   flex-direction: column;
   justify-content: space-between;
@@ -55,9 +55,11 @@
   height: 20px;
   cursor: pointer;
   z-index: 101;
-  background: none;
+  background: transparent;
   border: none;
   padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
 
   span {
     display: block;
@@ -83,11 +85,11 @@
 
 // Mobile Responsive
 @media (max-width: 768px) {
-  .menu-toggle {
-    display: flex;
+  .site-header .menu-toggle {
+    display: flex !important;
   }
 
-  .nav-links {
+  .site-header .nav-links {
     position: fixed;
     top: 0;
     left: 0;

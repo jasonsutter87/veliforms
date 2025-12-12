@@ -94,11 +94,11 @@ DATABASE_URL=postgresql://user:password@localhost:5432/veilforms
 # Storage (S3-compatible)
 S3_ENDPOINT=http://localhost:9000
 S3_BUCKET=veilforms
-S3_ACCESS_KEY=minioadmin
-S3_SECRET_KEY=minioadmin
+S3_ACCESS_KEY=YOUR_ACCESS_KEY_HERE
+S3_SECRET_KEY=YOUR_SECRET_KEY_HERE
 
 # Security
-JWT_SECRET=your-secure-random-string
+JWT_SECRET=GENERATE_A_RANDOM_64_CHAR_STRING_HERE
 ENCRYPTION_KEY=your-32-byte-hex-key
 
 # Optional
@@ -160,8 +160,8 @@ Or MinIO locally:
 docker run -d \
   -p 9000:9000 \
   -p 9001:9001 \
-  -e MINIO_ROOT_USER=admin \
-  -e MINIO_ROOT_PASSWORD=password \
+  -e MINIO_ROOT_USER=YOUR_ADMIN_USER \
+  -e MINIO_ROOT_PASSWORD=YOUR_ADMIN_PASSWORD \
   minio/minio server /data --console-address ":9001"
 ```
 
@@ -211,8 +211,8 @@ DATABASE_URL=postgresql://user:pass@host:5432/veilforms?pool_min=2&pool_max=10
 ```bash
 S3_ENDPOINT=https://s3.amazonaws.com
 S3_BUCKET=your-bucket
-S3_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE
-S3_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+S3_ACCESS_KEY=YOUR_AWS_ACCESS_KEY
+S3_SECRET_KEY=YOUR_AWS_SECRET_KEY
 S3_REGION=us-east-1
 ```
 

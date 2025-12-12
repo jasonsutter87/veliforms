@@ -1,0 +1,122 @@
+{{ define "main" }}
+<section class="demo-hero">
+  <div class="container">
+    <h1>Try it live</h1>
+    <p class="lead">Type in the form below and watch your data get encrypted in real-time. This is exactly what happens when users submit your forms.</p>
+  </div>
+</section>
+
+<section class="demo-section">
+  <div class="container">
+    <div class="demo-grid">
+      <div class="demo-card">
+        <h2>Contact Form</h2>
+
+        <div class="pii-alert" id="pii-alert">
+          <strong>PII Detected:</strong> <span id="pii-types"></span>
+          <br><small>Data will be stripped before encryption (demo mode)</small>
+        </div>
+
+        <form id="demo-form">
+          <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="John Doe">
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="john@example.com">
+          </div>
+
+          <div class="form-group">
+            <label for="subject">Subject</label>
+            <select id="subject" name="subject">
+              <option value="">Select a topic</option>
+              <option value="general">General Inquiry</option>
+              <option value="support">Technical Support</option>
+              <option value="sales">Sales Question</option>
+              <option value="feedback">Feedback</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="4" placeholder="Your message here..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="submit-btn">Encrypt & Submit</button>
+        </form>
+
+        <div class="success-message" id="success-message">
+          <h3>Submission Encrypted!</h3>
+          <p>Your data was encrypted client-side.</p>
+          <p style="margin-top: 8px;">Submission ID: <code id="submission-id">vf-xxx</code></p>
+          <button type="button" class="btn btn-secondary" id="reset-btn" style="margin-top: 16px;">Try Again</button>
+        </div>
+      </div>
+
+      <div class="demo-card demo-output-card">
+        <h2>Encrypted Output <span class="live-badge">LIVE</span></h2>
+
+        <div class="output-section">
+          <h3><span class="status-dot"></span> Real-time Preview</h3>
+          <pre id="encrypted-output"><code>{
+  <span class="key">"encrypted"</span>: <span class="highlight">true</span>,
+  <span class="key">"version"</span>: "vf-e1",
+  <span class="key">"data"</span>: "Waiting for input...",
+  <span class="key">"key"</span>: "...",
+  <span class="key">"iv"</span>: "..."
+}</code></pre>
+        </div>
+
+        <div class="output-section">
+          <h3>Original Data <span class="badge-small">Only you see this</span></h3>
+          <pre id="original-output"><code>{
+  <span class="key">"name"</span>: "",
+  <span class="key">"email"</span>: "",
+  <span class="key">"subject"</span>: "",
+  <span class="key">"message"</span>: ""
+}</code></pre>
+        </div>
+
+        <div class="output-section">
+          <h3>What VeilForms Receives</h3>
+          <p class="text-muted">
+            We only receive the encrypted payload above. Without your private key,
+            this data is <strong>unreadable</strong>. Even if our servers were compromised,
+            your data remains protected.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="demo-features">
+  <div class="container">
+    <h2>What this demo shows</h2>
+    <div class="features-row">
+      <div class="feature-item">
+        <div class="feature-icon">🔍</div>
+        <h4>Real-time PII Detection</h4>
+        <p>Emails, phones, names are detected as you type</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🔐</div>
+        <h4>Client-side Encryption</h4>
+        <p>RSA-2048 + AES-256 encryption in your browser</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🎭</div>
+        <h4>Anonymous IDs</h4>
+        <p>Cryptographic IDs with no link to identity</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🚫</div>
+        <h4>Zero Tracking</h4>
+        <p>No cookies, no fingerprinting, no analytics</p>
+      </div>
+    </div>
+  </div>
+</section>
+{{ end }}

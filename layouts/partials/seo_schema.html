@@ -23,15 +23,11 @@
 <meta property="og:site_name" content="{{ .Site.Title }}" />
 <meta property="og:type" content="website">
 
-{{if eq site.BaseURL "{{ .Site.BaseURL }}/"}}
 {{- if .Params.noIndex -}}
 <meta name="robots" content="noindex, nofollow">
 {{- else -}}
 <meta name="robots" content="index, follow">
 {{- end -}}
-{{ else }}
-<meta name="robots" content="noindex, nofollow">
-{{ end }}
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
@@ -43,3 +39,89 @@
 {{ end}}
 <meta name="twitter:description" content="{{ .Description }}">
 <meta name="twitter:image" content="{{ .Site.BaseURL }}{{ .Params.image  }}">
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "{{ if eq .Section "blog" }}BlogPosting{{ else }}WebPage{{ end }}",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ .Permalink }}"
+  },
+  "headline": "{{ .Title }}",
+  "description": "{{ .Description }}",
+  {{ if eq .Section "blog" }}
+  "datePublished": "{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}",
+  "dateModified": "{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}",
+  "author": {
+    "@type": "Organization",
+    "name": "VeilForms"
+  },
+  {{ end }}
+  "publisher": {
+    "@type": "Organization",
+    "name": "VeilForms",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ .Site.BaseURL }}images/logo.png"
+    }
+  },
+  "url": "{{ .Permalink }}"
+}
+</script>
+
+{{ if .IsHome }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "VeilForms",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Web",
+  "description": "Privacy-first form builder with client-side encryption. Your users' data is encrypted in their browser before transmission.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "5",
+    "ratingCount": "1"
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "VeilForms",
+  "url": "{{ .Site.BaseURL }}",
+  "logo": "{{ .Site.BaseURL }}images/logo.png",
+  "description": "Privacy-first forms with client-side encryption",
+  "sameAs": []
+}
+</script>
+{{ end }}
+
+{{ if eq .Section "docs" }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "{{ .Title }}",
+  "description": "{{ .Description }}",
+  "author": {
+    "@type": "Organization",
+    "name": "VeilForms"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "VeilForms"
+  },
+  "mainEntityOfPage": "{{ .Permalink }}"
+}
+</script>
+{{ end }}

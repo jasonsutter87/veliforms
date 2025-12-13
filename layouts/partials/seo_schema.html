@@ -11,27 +11,29 @@
 
 <!-- Open Graph / Facebook -->
 {{ if .Params.PageTitle}}
-<meta name="og:title" content="{{ .Params.PageTitle }}">
+<meta property="og:title" content="{{ .Params.PageTitle }}">
 {{ else }}
-<meta name="og:title" content="{{ .Title }}">
+<meta property="og:title" content="{{ .Title }}">
 {{ end }}
 <meta property="og:date" content="{{ .Date }}" />
 <meta property="og:description" content="{{ .Description }}">
-
-<meta property="og:image" content="{{ .Site.BaseURL }}{{ .Params.seoimage  }}">
+{{ if .Params.image }}
+<meta property="og:image" content="{{ .Site.BaseURL }}{{ .Params.image }}">
+{{ else }}
+<meta property="og:image" content="{{ .Site.BaseURL }}images/share-image.jpg">
+{{ end }}
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ .Title }} - VeilForms">
 <meta property="og:url" content="{{ .Permalink }}">
 <meta property="og:site_name" content="{{ .Site.Title }}" />
-<meta property="og:type" content="website">
+<meta property="og:type" content="{{ if eq .Section "blog" }}article{{ else }}website{{ end }}">
 
-{{if eq site.BaseURL "{{ .Site.BaseURL }}/"}}
 {{- if .Params.noIndex -}}
 <meta name="robots" content="noindex, nofollow">
 {{- else -}}
 <meta name="robots" content="index, follow">
 {{- end -}}
-{{ else }}
-<meta name="robots" content="noindex, nofollow">
-{{ end }}
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
@@ -42,4 +44,99 @@
 <meta name="twitter:title" content="{{ .Title }}">
 {{ end}}
 <meta name="twitter:description" content="{{ .Description }}">
-<meta name="twitter:image" content="{{ .Site.BaseURL }}{{ .Params.image  }}">
+{{ if .Params.image }}
+<meta name="twitter:image" content="{{ .Site.BaseURL }}{{ .Params.image }}">
+{{ else }}
+<meta name="twitter:image" content="{{ .Site.BaseURL }}images/share-image.jpg">
+{{ end }}
+<meta name="twitter:image:alt" content="{{ .Title }} - VeilForms">
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "{{ if eq .Section "blog" }}BlogPosting{{ else }}WebPage{{ end }}",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ .Permalink }}"
+  },
+  "headline": "{{ .Title }}",
+  "description": "{{ .Description }}",
+  {{ if eq .Section "blog" }}
+  "datePublished": "{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}",
+  "dateModified": "{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}",
+  "author": {
+    "@type": "Organization",
+    "name": "VeilForms"
+  },
+  {{ end }}
+  "publisher": {
+    "@type": "Organization",
+    "name": "VeilForms",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ .Site.BaseURL }}images/logo.png"
+    }
+  },
+  "url": "{{ .Permalink }}"
+}
+</script>
+
+{{ if .IsHome }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "VeilForms",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Web",
+  "description": "Privacy-first form builder with client-side encryption. Your users' data is encrypted in their browser before transmission.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "5",
+    "ratingCount": "1"
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "VeilForms",
+  "url": "{{ .Site.BaseURL }}",
+  "logo": "{{ .Site.BaseURL }}images/logo.png",
+  "description": "Privacy-first forms with client-side encryption",
+  "sameAs": [
+    "https://github.com/jasonsutter87/veilforms",
+    "https://twitter.com/veilforms",
+    "https://linkedin.com/company/veilforms"
+  ]
+}
+</script>
+{{ end }}
+
+{{ if eq .Section "docs" }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "{{ .Title }}",
+  "description": "{{ .Description }}",
+  "author": {
+    "@type": "Organization",
+    "name": "VeilForms"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "VeilForms"
+  },
+  "mainEntityOfPage": "{{ .Permalink }}"
+}
+</script>
+{{ end }}

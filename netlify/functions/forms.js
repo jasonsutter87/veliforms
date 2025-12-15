@@ -538,6 +538,4 @@ async function handleRegenerateKeys(formId, userId, headers, auditCtx) {
   }, headers);
 }
 
-export const config = {
-  path: ['/api/forms', '/api/forms/*']
-};
+// Routing handled by netlify.toml redirects: /api/* -> /.netlify/functions/:splat

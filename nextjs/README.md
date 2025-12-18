@@ -90,4 +90,4 @@ See `.env.example` for required environment variables.
 
 ## License
 
-Business Source License 1.1 - Converts to Apache 2.0 on 2029-01-01.
+Business Source License 1.1 - Converts to Apache 2.0 on 2031-01-01.

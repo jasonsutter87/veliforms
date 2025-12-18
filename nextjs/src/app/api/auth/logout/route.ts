@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, getTokenFromHeader, revokeToken } from "@/lib/auth";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
+import { authLogger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,18 +32,19 @@ export async function POST(req: NextRequest) {
     const result = await revokeToken(token);
 
     if (!result.success) {
-      console.error("Token revocation failed:", result.error);
+      authLogger.error({ error: result.error, userId: decoded.userId }, "Token revocation failed");
       return errorResponse(ErrorCodes.SERVER_ERROR, {
         message: "Logout failed",
       });
     }
 
+    authLogger.info({ userId: decoded.userId }, "User logged out successfully");
     return NextResponse.json({
       success: true,
       message: "Logged out successfully",
     });
   } catch (err) {
-    console.error("Logout error:", err);
+    authLogger.error({ err }, "Logout failed");
     return errorResponse(ErrorCodes.SERVER_ERROR, {
       message: "Logout failed",
     });

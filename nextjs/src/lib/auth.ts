@@ -11,12 +11,82 @@ import {
   revokeToken as revokeTokenFromBlocklist,
 } from "./token-blocklist";
 
-// SECURITY: JWT_SECRET must be set in environment
+/**
+ * Calculate Shannon entropy of a string
+ * Returns entropy in bits per character
+ */
+function calculateEntropy(str: string): number {
+  const len = str.length;
+  const frequencies: Record<string, number> = {};
+
+  // Count character frequencies
+  for (const char of str) {
+    frequencies[char] = (frequencies[char] || 0) + 1;
+  }
+
+  // Calculate entropy
+  let entropy = 0;
+  for (const char in frequencies) {
+    const p = frequencies[char] / len;
+    entropy -= p * Math.log2(p);
+  }
+
+  return entropy;
+}
+
+/**
+ * Validate JWT secret meets security requirements
+ * - Minimum 32 characters
+ * - Must contain uppercase, lowercase, digits, AND special characters
+ * - Must have sufficient entropy (minimum 3.5 bits per character)
+ */
+function validateJwtSecret(secret: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (secret.length < 32) {
+    errors.push('JWT_SECRET must be at least 32 characters');
+  }
+
+  if (!/[A-Z]/.test(secret)) {
+    errors.push('JWT_SECRET must contain at least one uppercase letter');
+  }
+
+  if (!/[a-z]/.test(secret)) {
+    errors.push('JWT_SECRET must contain at least one lowercase letter');
+  }
+
+  if (!/[0-9]/.test(secret)) {
+    errors.push('JWT_SECRET must contain at least one digit');
+  }
+
+  if (!/[!@#$%^&*(),.?":{}|<>_\-+=[\]\\/`~;']/.test(secret)) {
+    errors.push('JWT_SECRET must contain at least one special character');
+  }
+
+  // Check entropy (minimum 3.5 bits per character for good randomness)
+  const entropy = calculateEntropy(secret);
+  if (entropy < 3.5) {
+    errors.push(`JWT_SECRET has insufficient entropy (${entropy.toFixed(2)} bits/char, minimum 3.5)`);
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+// SECURITY: JWT_SECRET must be set in environment with strong entropy
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
-  if (!secret || secret.length < 32) {
-    throw new Error('JWT_SECRET environment variable must be set and at least 32 characters');
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable must be set');
   }
+
+  const validation = validateJwtSecret(secret);
+  if (!validation.valid) {
+    throw new Error(`JWT_SECRET validation failed:\n${validation.errors.join('\n')}`);
+  }
+
   return secret;
 }
 

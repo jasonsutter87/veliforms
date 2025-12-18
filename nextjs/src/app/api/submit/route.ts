@@ -111,10 +111,11 @@ async function verifyRecaptcha(
 export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin") || "*";
 
-  // Rate limit submissions (30 per minute per IP)
+  // Rate limit: 10 requests per minute per IP (prevent spam)
   const rateLimit = await checkRateLimit(req, {
-    keyPrefix: "submit",
-    maxRequests: 30,
+    keyPrefix: "form-submit",
+    maxRequests: 10,
+    windowMs: 60000, // 1 minute
   });
   if (!rateLimit.allowed) {
     return NextResponse.json(

@@ -41,3 +41,4 @@ export const authLogger = createLogger('auth');
 export const storageLogger = createLogger('storage');
 export const apiLogger = createLogger('api');
 export const webhookLogger = createLogger('webhook');
+export const billingLogger = createLogger('billing');

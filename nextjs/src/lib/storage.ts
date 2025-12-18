@@ -6,6 +6,12 @@
 import { getStore } from "@netlify/blobs";
 import { storageLogger } from "./logger";
 import { retryStorage } from "./retry";
+import {
+  getCachedUser,
+  getCachedForm,
+  invalidateUserCache,
+  invalidateFormCache,
+} from "./cache";
 
 // Store names
 const STORES = {
@@ -154,7 +160,8 @@ export async function getUserById(userId: string): Promise<User | null> {
         email: string;
       } | null;
       if (mapping?.email) {
-        return await getUser(mapping.email);
+        // Use cached version for user lookup
+        return await getCachedUser(mapping.email);
       }
       storageLogger.debug({ userId, found: false }, 'User lookup by ID');
       return null;
@@ -179,6 +186,10 @@ export async function updateUser(
     updatedAt: new Date().toISOString(),
   };
   await users.setJSON(email.toLowerCase(), updated);
+
+  // Invalidate cache after update
+  invalidateUserCache(email);
+
   return updated;
 }
 
@@ -431,6 +442,10 @@ export async function updateForm(
     updatedAt: new Date().toISOString(),
   };
   await forms.setJSON(formId, updated);
+
+  // Invalidate cache after update
+  invalidateFormCache(formId);
+
   return updated;
 }
 
@@ -465,7 +480,8 @@ export async function getUserForms(userId: string): Promise<Form[]> {
     try {
       const formIds =
         ((await forms.get(userFormsKey, { type: "json" })) as string[] | null) || [];
-      const formDetails = await Promise.all(formIds.map((id) => getForm(id)));
+      // Use cached version for form lookups
+      const formDetails = await Promise.all(formIds.map((id) => getCachedForm(id)));
       const validForms = formDetails.filter((f): f is Form => f !== null);
       storageLogger.debug({ userId, count: validForms.length }, 'User forms lookup');
       return validForms;

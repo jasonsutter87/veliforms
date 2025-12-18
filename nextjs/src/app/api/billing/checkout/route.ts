@@ -4,7 +4,6 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
 import { getUser, updateUser } from "@/lib/storage";
 import {
   createCheckoutSession,
@@ -12,16 +11,11 @@ import {
 } from "@/lib/stripe";
 import { logAudit, AuditEvents, getAuditContext } from "@/lib/audit";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
+import { authRoute } from "@/lib/route-handler";
 
-export async function POST(req: NextRequest) {
-  // Authenticate
-  const auth = await authenticateRequest(req);
-  if (auth.error) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
-
+export const POST = authRoute(async (req: NextRequest, { user: authUser }) => {
   try {
-    const user = await getUser(auth.user!.email);
+    const user = await getUser(authUser.email);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -89,4 +83,4 @@ export async function POST(req: NextRequest) {
       message: (err as Error).message || "Failed to create checkout session",
     });
   }
-}
+});

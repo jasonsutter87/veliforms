@@ -11,6 +11,7 @@ import {
   stripe,
 } from "@/lib/stripe";
 import { logAudit, AuditEvents } from "@/lib/audit";
+import { webhookLogger } from "@/lib/logger";
 import Stripe from "stripe";
 
 // Disable body parsing for webhook signature verification
@@ -36,7 +37,7 @@ async function getUserByStripeCustomer(
       return await getUser(customer.email);
     }
   } catch (error) {
-    console.error("Error finding user by Stripe customer:", error);
+    webhookLogger.error({ error, customerId }, "Error finding user by Stripe customer");
   }
 
   return null;
@@ -50,7 +51,7 @@ async function handleSubscriptionCreated(
 ): Promise<void> {
   const user = await getUserByStripeCustomer(subscription.customer as string);
   if (!user) {
-    console.warn("User not found for subscription:", subscription.id);
+    webhookLogger.warn({ subscriptionId: subscription.id, customerId: subscription.customer }, "User not found for subscription");
     return;
   }
 
@@ -68,11 +69,7 @@ async function handleSubscriptionCreated(
     subscriptionId: subscription.id,
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(
-      `Subscription created for user ${user.id}: ${subscriptionData.plan}`
-    );
-  }
+  webhookLogger.info({ userId: user.id, plan: subscriptionData.plan, subscriptionId: subscription.id }, "Subscription created");
 }
 
 /**
@@ -83,7 +80,7 @@ async function handleSubscriptionUpdated(
 ): Promise<void> {
   const user = await getUserByStripeCustomer(subscription.customer as string);
   if (!user) {
-    console.warn("User not found for subscription update:", subscription.id);
+    webhookLogger.warn({ subscriptionId: subscription.id, customerId: subscription.customer }, "User not found for subscription update");
     return;
   }
 
@@ -107,11 +104,7 @@ async function handleSubscriptionUpdated(
     });
   }
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(
-      `Subscription updated for user ${user.id}: ${subscriptionData.plan}`
-    );
-  }
+  webhookLogger.info({ userId: user.id, plan: subscriptionData.plan, previousPlan, subscriptionId: subscription.id }, "Subscription updated");
 }
 
 /**
@@ -122,7 +115,7 @@ async function handleSubscriptionDeleted(
 ): Promise<void> {
   const user = await getUserByStripeCustomer(subscription.customer as string);
   if (!user) {
-    console.warn("User not found for subscription deletion:", subscription.id);
+    webhookLogger.warn({ subscriptionId: subscription.id, customerId: subscription.customer }, "User not found for subscription deletion");
     return;
   }
 
@@ -142,9 +135,7 @@ async function handleSubscriptionDeleted(
     subscriptionId: subscription.id,
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`Subscription deleted for user ${user.id}, downgraded to free`);
-  }
+  webhookLogger.info({ userId: user.id, previousPlan, subscriptionId: subscription.id }, "Subscription deleted, downgraded to free");
 }
 
 /**
@@ -180,11 +171,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     invoiceId: invoiceData.id,
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(
-      `Invoice paid for user ${user.id}: $${(invoiceData.amount_paid || 0) / 100}`
-    );
-  }
+  webhookLogger.info({ userId: user.id, amount: (invoiceData.amount_paid || 0) / 100, currency: invoiceData.currency, invoiceId: invoiceData.id }, "Invoice paid");
 }
 
 /**
@@ -219,9 +206,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
     attemptCount: invoiceData.attempt_count || 0,
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`Payment failed for user ${user.id}`);
-  }
+  webhookLogger.warn({ userId: user.id, invoiceId: invoiceData.id, attemptCount: invoiceData.attempt_count }, "Payment failed");
 }
 
 /**
@@ -234,7 +219,7 @@ async function handleCheckoutCompleted(
   const planName = session.metadata?.planName;
 
   if (!userId || !planName) {
-    console.warn("Missing metadata in checkout session");
+    webhookLogger.warn({ sessionId: session.id }, "Missing metadata in checkout session");
     return;
   }
 
@@ -245,9 +230,7 @@ async function handleCheckoutCompleted(
     subscriptionId: session.subscription,
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`Checkout completed for user ${userId}: ${planName}`);
-  }
+  webhookLogger.info({ userId, plan: planName, sessionId: session.id }, "Checkout completed");
 }
 
 export async function POST(req: NextRequest) {
@@ -266,19 +249,14 @@ export async function POST(req: NextRequest) {
     const body = await req.text();
     event = constructWebhookEvent(body, signature);
   } catch (err) {
-    console.error(
-      "Webhook signature verification failed:",
-      (err as Error).message
-    );
+    webhookLogger.error({ err }, "Webhook signature verification failed");
     return NextResponse.json(
       { error: "Webhook signature verification failed" },
       { status: 400 }
     );
   }
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`Processing Stripe event: ${event.type}`);
-  }
+  webhookLogger.debug({ eventType: event.type, eventId: event.id }, "Processing Stripe event");
 
   try {
     switch (event.type) {
@@ -315,14 +293,12 @@ export async function POST(req: NextRequest) {
         break;
 
       default:
-        if (process.env.NODE_ENV !== "production") {
-          console.log(`Unhandled event type: ${event.type}`);
-        }
+        webhookLogger.debug({ eventType: event.type }, "Unhandled event type");
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook handler error:", error);
+    webhookLogger.error({ error, eventType: event.type, eventId: event.id }, "Webhook handler error");
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }

@@ -12,13 +12,14 @@ import {
 } from "@/lib/storage";
 import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
+import { authLogger } from "@/lib/logger";
 
 async function handleVerification(req: NextRequest, token: string | null) {
-  // Rate limit: 10 requests per hour
+  // Rate limit: 5 requests per minute per IP
   const rateLimit = await checkRateLimit(req, {
-    keyPrefix: "verify",
-    maxRequests: 10,
-    windowMs: 60 * 60 * 1000, // 1 hour
+    keyPrefix: "verify-email",
+    maxRequests: 5,
+    windowMs: 60000, // 1 minute
   });
 
   if (!rateLimit.allowed) {
@@ -84,9 +85,7 @@ async function handleVerification(req: NextRequest, token: string | null) {
   // Delete the used token (one-time use)
   await deleteEmailVerificationToken(token);
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`Email verified for ${tokenData.email}`);
-  }
+  authLogger.info({ email: tokenData.email, userId: user.id }, "Email verified successfully");
 
   return NextResponse.json(
     {
@@ -103,7 +102,7 @@ export async function GET(req: NextRequest) {
     const token = searchParams.get("token");
     return handleVerification(req, token);
   } catch (err) {
-    console.error("Verify email error:", err);
+    authLogger.error({ err }, "Email verification failed");
     return errorResponse(ErrorCodes.SERVER_ERROR, {
       message: "Verification failed",
     });
@@ -115,7 +114,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     return handleVerification(req, body.token);
   } catch (err) {
-    console.error("Verify email error:", err);
+    authLogger.error({ err }, "Email verification failed");
     return errorResponse(ErrorCodes.SERVER_ERROR, {
       message: "Verification failed",
     });

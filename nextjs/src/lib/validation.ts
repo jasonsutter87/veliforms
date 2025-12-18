@@ -4,6 +4,7 @@
  */
 
 import { validatePasswordStrength } from "./auth";
+import DOMPurify from "isomorphic-dompurify";
 
 // ID format patterns
 const ID_PATTERNS = {
@@ -87,20 +88,32 @@ export function isValidHexColor(color: unknown): color is string {
 interface SanitizeOptions {
   maxLength?: number;
   trim?: boolean;
+  allowHtml?: boolean;
 }
 
 /**
  * Sanitize string input
+ * Strips HTML/JavaScript by default using DOMPurify
+ * Set allowHtml: true only when HTML content is intentionally allowed
  */
 export function sanitizeString(
   input: unknown,
   options: SanitizeOptions = {}
 ): string | null {
-  const { maxLength = 1000, trim = true } = options;
+  const { maxLength = 1000, trim = true, allowHtml = false } = options;
 
   if (typeof input !== "string") return null;
 
   let result = input;
+
+  // Strip HTML/JavaScript unless explicitly allowed
+  if (!allowHtml) {
+    result = DOMPurify.sanitize(result, { ALLOWED_TAGS: [] });
+  } else {
+    // If HTML is allowed, still sanitize dangerous content
+    result = DOMPurify.sanitize(result);
+  }
+
   if (trim) result = result.trim();
   if (maxLength && result.length > maxLength) result = result.slice(0, maxLength);
 

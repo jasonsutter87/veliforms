@@ -12,8 +12,18 @@ import {
   BASE_URL,
 } from './email';
 
-// Mock console.log to avoid cluttering test output
-const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+// Mock Pino logger
+vi.mock('./logger', () => ({
+  apiLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+import { apiLogger } from './logger';
+const loggerDebugSpy = vi.mocked(apiLogger.debug);
 
 describe('email', () => {
   beforeEach(() => {
@@ -22,7 +32,6 @@ describe('email', () => {
   });
 
   afterEach(() => {
-    consoleLogSpy.mockClear();
     vi.useRealTimers();
   });
 
@@ -59,11 +68,12 @@ describe('email', () => {
         'https://example.com/verify?token=abc123'
       );
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[DEV] Would send verification email to test@example.com')
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[DEV] Verify URL: https://example.com/verify?token=abc123')
+      expect(loggerDebugSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'test@example.com',
+          type: 'verification',
+        }),
+        expect.any(String)
       );
     });
 
@@ -148,11 +158,12 @@ describe('email', () => {
         'https://example.com/reset?token=xyz789'
       );
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[DEV] Would send password reset email to test@example.com')
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[DEV] Reset URL: https://example.com/reset?token=xyz789')
+      expect(loggerDebugSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'test@example.com',
+          type: 'password-reset',
+        }),
+        expect.any(String)
       );
     });
 
@@ -216,8 +227,12 @@ describe('email', () => {
     it('should log welcome email details', async () => {
       await sendWelcomeEmail('test@example.com');
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[DEV] Would send welcome email to test@example.com')
+      expect(loggerDebugSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'test@example.com',
+          type: 'welcome',
+        }),
+        expect.any(String)
       );
     });
 
@@ -251,8 +266,12 @@ describe('email', () => {
       const result = await sendWelcomeEmail(newUserEmail);
 
       expect(result).not.toBeNull();
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(`[DEV] Would send welcome email to ${newUserEmail}`)
+      expect(loggerDebugSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: newUserEmail,
+          type: 'welcome',
+        }),
+        expect.any(String)
       );
     });
   });
@@ -472,15 +491,15 @@ describe('email', () => {
       });
     });
 
-    it('should log to console in dev mode', async () => {
-      consoleLogSpy.mockClear();
+    it('should log in dev mode', async () => {
+      loggerDebugSpy.mockClear();
 
       await sendEmailVerification(
         'test@example.com',
         'https://example.com/verify'
       );
 
-      expect(consoleLogSpy).toHaveBeenCalled();
+      expect(loggerDebugSpy).toHaveBeenCalled();
     });
 
     it('should not throw errors in dev mode', async () => {

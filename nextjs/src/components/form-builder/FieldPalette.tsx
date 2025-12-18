@@ -4,30 +4,15 @@
 
 "use client";
 
+import { memo } from "react";
 import { useDraggable } from "@dnd-kit/core";
+import { FIELD_TYPES } from "@/lib/field-types";
 
 interface FieldPaletteProps {
   onAddField: (fieldType: string) => void;
 }
 
-const FIELD_TYPES = [
-  { type: "text", label: "Text", icon: "T" },
-  { type: "email", label: "Email", icon: "@" },
-  { type: "textarea", label: "Text Area", icon: "P" },
-  { type: "number", label: "Number", icon: "#" },
-  { type: "phone", label: "Phone", icon: "P" },
-  { type: "select", label: "Dropdown", icon: "v" },
-  { type: "checkbox", label: "Checkbox", icon: "x" },
-  { type: "radio", label: "Radio", icon: "o" },
-  { type: "date", label: "Date", icon: "D" },
-  { type: "url", label: "URL", icon: "/" },
-  { type: "hidden", label: "Hidden", icon: "-" },
-  { type: "heading", label: "Heading", icon: "H" },
-  { type: "paragraph", label: "Paragraph", icon: "=" },
-  { type: "divider", label: "Divider", icon: "_" },
-];
-
-export function FieldPalette({ onAddField }: FieldPaletteProps) {
+export const FieldPalette = memo(function FieldPalette({ onAddField }: FieldPaletteProps) {
   return (
     <aside className="field-palette">
       <h3 className="palette-title">Fields</h3>
@@ -43,7 +28,7 @@ export function FieldPalette({ onAddField }: FieldPaletteProps) {
       </div>
     </aside>
   );
-}
+});
 
 interface DraggableFieldButtonProps {
   type: string;
@@ -51,7 +36,7 @@ interface DraggableFieldButtonProps {
   onClick: () => void;
 }
 
-function DraggableFieldButton({ type, label, onClick }: DraggableFieldButtonProps) {
+const DraggableFieldButton = memo(function DraggableFieldButton({ type, label, onClick }: DraggableFieldButtonProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `palette-${type}`,
   });
@@ -68,9 +53,9 @@ function DraggableFieldButton({ type, label, onClick }: DraggableFieldButtonProp
       <span>{label}</span>
     </button>
   );
-}
+});
 
-function FieldIcon({ type }: { type: string }) {
+const FieldIcon = memo(function FieldIcon({ type }: { type: string }) {
   switch (type) {
     case "text":
       return (
@@ -181,4 +166,4 @@ function FieldIcon({ type }: { type: string }) {
     default:
       return null;
   }
-}
+});

@@ -4,6 +4,7 @@
 
 "use client";
 
+import { memo } from "react";
 import { SortableField } from "./SortableField";
 import type { FormField } from "@/store/dashboard";
 
@@ -15,7 +16,7 @@ interface FormCanvasProps {
   onDuplicateField: (id: string) => void;
 }
 
-export function FormCanvas({
+export const FormCanvas = memo(function FormCanvas({
   fields,
   selectedFieldId,
   onSelectField,
@@ -36,4 +37,4 @@ export function FormCanvas({
       ))}
     </div>
   );
-}
+});

@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authRoute } from "@/lib/route-handler";
 import { createForm, getUserForms, getUserById } from "@/lib/storage";
 import { logAudit, AuditEvents, getAuditContext } from "@/lib/audit";
-import { validateFormName } from "@/lib/validation";
+import { validateFormName, sanitizeString } from "@/lib/validation";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 import { generateKeyPair } from "@/lib/encryption";
 import { getFormLimit } from "@/lib/subscription-limits";
@@ -51,7 +51,16 @@ export const POST = authRoute(async (req, { user }) => {
     const body = await req.json();
     const { name, settings } = body;
 
-    const nameValidation = validateFormName(name);
+    // Sanitize form name to prevent XSS
+    const sanitizedName = sanitizeString(name, { maxLength: 100 });
+    if (!sanitizedName) {
+      return NextResponse.json(
+        { error: "Form name is required" },
+        { status: 400 }
+      );
+    }
+
+    const nameValidation = validateFormName(sanitizedName);
     if (!nameValidation.valid) {
       return NextResponse.json(
         { error: nameValidation.error },
@@ -93,7 +102,7 @@ export const POST = authRoute(async (req, { user }) => {
 
     // Create form
     const form = await createForm(user.userId, {
-      name: name.trim(),
+      name: sanitizedName,
       publicKey: JSON.stringify(publicKey),
       settings: {
         encryption: true,

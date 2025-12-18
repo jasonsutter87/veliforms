@@ -4,8 +4,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import type { FormField } from "@/store/dashboard";
+import { supportsOptions, supportsPlaceholder, supportsRequired, type FieldType } from "@/lib/field-types";
 
 interface FieldPropertiesProps {
   field: FormField;
@@ -13,7 +14,7 @@ interface FieldPropertiesProps {
   onClose: () => void;
 }
 
-export function FieldProperties({ field, onUpdate, onClose }: FieldPropertiesProps) {
+export const FieldProperties = memo(function FieldProperties({ field, onUpdate, onClose }: FieldPropertiesProps) {
   const [options, setOptions] = useState<string[]>(field.options || []);
 
   const handleAddOption = () => {
@@ -35,9 +36,9 @@ export function FieldProperties({ field, onUpdate, onClose }: FieldPropertiesPro
     onUpdate({ options: newOptions });
   };
 
-  const showOptions = ["select", "radio", "checkbox"].includes(field.type);
-  const showPlaceholder = ["text", "email", "textarea", "number", "phone", "url"].includes(field.type);
-  const showRequired = !["heading", "paragraph", "divider", "hidden"].includes(field.type);
+  const showOptions = supportsOptions(field.type as FieldType);
+  const showPlaceholder = supportsPlaceholder(field.type as FieldType);
+  const showRequired = supportsRequired(field.type as FieldType);
 
   return (
     <aside className="field-properties" style={{ display: "block" }}>
@@ -203,4 +204,4 @@ export function FieldProperties({ field, onUpdate, onClose }: FieldPropertiesPro
       </div>
     </aside>
   );
-}
+});

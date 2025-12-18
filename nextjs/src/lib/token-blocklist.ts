@@ -8,6 +8,7 @@
 import { getStore } from "@netlify/blobs";
 import jwt from "jsonwebtoken";
 import { createHash } from "crypto";
+import { authLogger } from "./logger";
 
 const STORE_NAME = "vf-token-blocklist";
 
@@ -88,18 +89,27 @@ export async function revokeToken(token: string): Promise<RevokeResult> {
     const tokenHash = hashToken(token);
     const store = getBlocklistStore();
 
+    const expiresAt = Date.now() + (ttl * 1000);
+
     await store.setJSON(
       tokenHash,
       {
         revokedAt: new Date().toISOString(),
-        expiresAt: new Date((Date.now() / 1000 + ttl) * 1000).toISOString(),
+        expiresAt: new Date(expiresAt).toISOString(),
       } as BlocklistEntry,
       { metadata: { ttl: String(ttl) } }
     );
 
+    // Probabilistic cleanup (1% of requests)
+    if (Math.random() < 0.01) {
+      cleanupExpiredTokens().catch((err) => {
+        authLogger.warn({ err }, "Background cleanup failed");
+      });
+    }
+
     return { success: true };
   } catch (err) {
-    console.error("Token revocation error:", err);
+    authLogger.error({ err }, "Token revocation failed");
     return { success: false, error: (err as Error).message };
   }
 }
@@ -119,7 +129,7 @@ export async function isTokenRevoked(token: string): Promise<boolean> {
 
     return entry !== null;
   } catch (err) {
-    console.error("Blocklist check error:", err);
+    authLogger.error({ err }, "Blocklist check failed");
     return false;
   }
 }
@@ -152,7 +162,7 @@ export async function cleanupExpiredTokens(): Promise<CleanupResult> {
 
     return { success: true, checked, removed };
   } catch (err) {
-    console.error("Cleanup error:", err);
+    authLogger.error({ err }, "Token cleanup failed");
     return { success: false, error: (err as Error).message };
   }
 }
@@ -189,7 +199,7 @@ export async function getBlocklistStats(): Promise<StatsResult> {
 
     return { success: true, total, active, expired };
   } catch (err) {
-    console.error("Stats error:", err);
+    authLogger.error({ err }, "Blocklist stats retrieval failed");
     return { success: false, error: (err as Error).message };
   }
 }

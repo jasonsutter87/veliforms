@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStore } from "@netlify/blobs";
 import { authRoute } from "@/lib/route-handler";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
+import { sanitizeString } from "@/lib/validation";
 
 const API_KEYS_STORE = "vf-api-keys";
 
@@ -97,7 +98,8 @@ export const POST = authRoute(async (req, { user }) => {
     const body = await req.json();
     const { name, permissions } = body;
 
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
+    // Validate name length first
+    if (typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(
         { error: "Key name is required" },
         { status: 400 }
@@ -107,6 +109,15 @@ export const POST = authRoute(async (req, { user }) => {
     if (name.length > 50) {
       return NextResponse.json(
         { error: "Key name must be 50 characters or less" },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize API key name to prevent XSS
+    const sanitizedName = sanitizeString(name, { maxLength: 50 });
+    if (!sanitizedName) {
+      return NextResponse.json(
+        { error: "Key name is required" },
         { status: 400 }
       );
     }
@@ -156,7 +167,7 @@ export const POST = authRoute(async (req, { user }) => {
 
     const keyData: ApiKeyData = {
       userId: user.userId,
-      name: name.trim(),
+      name: sanitizedName,
       prefix: rawKey.substring(0, 7) + "...",
       keyHash,
       permissions: keyPermissions,

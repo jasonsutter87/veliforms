@@ -16,12 +16,14 @@ import {
 } from "@/lib/storage";
 import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
+import { authLogger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
-  // Rate limit for password reset (5 per minute)
+  // Rate limit: 3 requests per minute per IP
   const rateLimit = await checkRateLimit(req, {
-    keyPrefix: "reset",
-    maxRequests: 5,
+    keyPrefix: "password-reset",
+    maxRequests: 3,
+    windowMs: 60000, // 1 minute
   });
 
   if (!rateLimit.allowed) {
@@ -83,9 +85,7 @@ export async function POST(req: NextRequest) {
     // Delete the used token (one-time use)
     await deletePasswordResetToken(token);
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`Password reset successful for ${tokenData.email}`);
-    }
+    authLogger.info({ email: tokenData.email }, "Password reset successful");
 
     return NextResponse.json(
       {
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       { headers: getRateLimitHeaders(rateLimit) }
     );
   } catch (err) {
-    console.error("Reset password error:", err);
+    authLogger.error({ err }, "Password reset failed");
     return errorResponse(ErrorCodes.SERVER_ERROR, {
       message: "An error occurred",
     });

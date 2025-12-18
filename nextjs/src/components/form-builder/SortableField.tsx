@@ -4,6 +4,7 @@
 
 "use client";
 
+import { memo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { FormField } from "@/store/dashboard";
@@ -16,7 +17,7 @@ interface SortableFieldProps {
   onDuplicate: () => void;
 }
 
-export function SortableField({
+export const SortableField = memo(function SortableField({
   field,
   isSelected,
   onSelect,
@@ -93,9 +94,9 @@ export function SortableField({
       </div>
     </div>
   );
-}
+});
 
-function FieldPreview({ field }: { field: FormField }) {
+const FieldPreview = memo(function FieldPreview({ field }: { field: FormField }) {
   switch (field.type) {
     case "heading":
       return <h3 className="preview-heading">{field.label}</h3>;
@@ -189,4 +190,4 @@ function FieldPreview({ field }: { field: FormField }) {
         </div>
       );
   }
-}
+});

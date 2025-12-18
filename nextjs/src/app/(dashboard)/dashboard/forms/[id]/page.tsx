@@ -7,7 +7,22 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useDashboardStore, Form, Submission } from "@/store/dashboard";
+
+// Dynamic import for FormBuilder with SSR disabled and loading state
+const FormBuilder = dynamic(
+  () => import("@/components/form-builder/FormBuilder").then(mod => ({ default: mod.FormBuilder })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="loading-builder" style={{ padding: "2rem", textAlign: "center" }}>
+        <div className="spinner"></div>
+        <p>Loading form builder...</p>
+      </div>
+    ),
+  }
+);
 
 // Format date
 function formatDate(dateString: string): string {
@@ -494,19 +509,30 @@ export default function FormDetailPage() {
       )}
 
       {/* Form Builder View */}
-      {viewMode === "builder" && (
-        <div className="form-builder-placeholder">
-          <div className="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="64" height="64">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="12" y1="8" x2="12" y2="16"></line>
-              <line x1="8" y1="12" x2="16" y2="12"></line>
-            </svg>
-            <h2>Form Builder</h2>
-            <p>Drag and drop fields to build your form.</p>
-            <p className="text-muted">Full form builder coming soon.</p>
-          </div>
-        </div>
+      {viewMode === "builder" && currentForm && (
+        <FormBuilder
+          formId={currentForm.id}
+          initialFields={currentForm.fields || []}
+          onSave={async (fields) => {
+            const token = localStorage.getItem("veilforms_token");
+            const response = await fetch(`/api/forms/${currentForm.id}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ fields }),
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to save form");
+            }
+
+            const data = await response.json();
+            setCurrentForm(data.form);
+          }}
+          onBack={() => setViewMode("detail")}
+        />
       )}
 
       {/* Decrypt Modal */}

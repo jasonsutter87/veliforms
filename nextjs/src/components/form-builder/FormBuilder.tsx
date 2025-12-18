@@ -26,23 +26,23 @@ function generateId(): string {
   return `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Default field configurations
-const FIELD_DEFAULTS: Record<string, Partial<FormField>> = {
-  text: { type: "text", label: "Text Field", placeholder: "Enter text..." },
-  email: { type: "email", label: "Email", placeholder: "email@example.com" },
-  textarea: { type: "textarea", label: "Message", placeholder: "Enter your message..." },
-  number: { type: "number", label: "Number", placeholder: "0" },
-  phone: { type: "phone", label: "Phone", placeholder: "(555) 555-5555" },
-  select: { type: "select", label: "Dropdown", options: ["Option 1", "Option 2", "Option 3"] },
-  checkbox: { type: "checkbox", label: "Checkbox" },
-  radio: { type: "radio", label: "Radio Group", options: ["Option 1", "Option 2", "Option 3"] },
-  date: { type: "date", label: "Date" },
-  url: { type: "url", label: "Website", placeholder: "https://" },
-  hidden: { type: "hidden", label: "Hidden Field", name: "hidden_field" },
-  heading: { type: "heading", label: "Section Heading" },
-  paragraph: { type: "paragraph", label: "Add description text here..." },
-  divider: { type: "divider", label: "" },
-};
+// Default field configurations - frozen to prevent accidental mutation
+const FIELD_DEFAULTS = Object.freeze({
+  text: Object.freeze({ type: "text", label: "Text Field", placeholder: "Enter text..." }),
+  email: Object.freeze({ type: "email", label: "Email", placeholder: "email@example.com" }),
+  textarea: Object.freeze({ type: "textarea", label: "Message", placeholder: "Enter your message..." }),
+  number: Object.freeze({ type: "number", label: "Number", placeholder: "0" }),
+  phone: Object.freeze({ type: "phone", label: "Phone", placeholder: "(555) 555-5555" }),
+  select: Object.freeze({ type: "select", label: "Dropdown", options: Object.freeze(["Option 1", "Option 2", "Option 3"]) }),
+  checkbox: Object.freeze({ type: "checkbox", label: "Checkbox" }),
+  radio: Object.freeze({ type: "radio", label: "Radio Group", options: Object.freeze(["Option 1", "Option 2", "Option 3"]) }),
+  date: Object.freeze({ type: "date", label: "Date" }),
+  url: Object.freeze({ type: "url", label: "Website", placeholder: "https://" }),
+  hidden: Object.freeze({ type: "hidden", label: "Hidden Field", name: "hidden_field" }),
+  heading: Object.freeze({ type: "heading", label: "Section Heading" }),
+  paragraph: Object.freeze({ type: "paragraph", label: "Add description text here..." }),
+  divider: Object.freeze({ type: "divider", label: "" }),
+}) as Readonly<Record<string, Readonly<Partial<FormField>>>>;
 
 export function FormBuilder({ formId, initialFields = [], onSave, onBack }: FormBuilderProps) {
   const {
@@ -83,7 +83,7 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo, canUndo, canRedo]);
 
-  // Add field from palette
+  // Add field from palette - uses functional update to avoid dependency on fields
   const handleAddField = useCallback((fieldType: string) => {
     const defaults = FIELD_DEFAULTS[fieldType] || { type: fieldType, label: fieldType };
     const newField: FormField = {
@@ -92,29 +92,35 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
       ...defaults,
     } as FormField;
 
-    setFields([...fields, newField]);
+    setFields(fields => [...fields, newField]);
     setSelectedFieldId(newField.id);
-  }, [fields, setFields]);
+  }, [setFields]);
 
-  // Update field
+  // Update field - uses functional update to avoid dependency on fields
   const handleUpdateField = useCallback((id: string, updates: Partial<FormField>) => {
-    setFields(
-      fields.map((f) => (f.id === id ? { ...f, ...updates } : f))
-    );
-  }, [fields, setFields]);
+    setFields(fields => {
+      const index = fields.findIndex(f => f.id === id);
+      if (index === -1) return fields;
+      const newFields = [...fields];
+      newFields[index] = { ...fields[index], ...updates };
+      return newFields;
+    });
+  }, [setFields]);
 
-  // Delete field
+  // Delete field - uses functional update to avoid dependency on fields
   const handleDeleteField = useCallback((id: string) => {
-    setFields(fields.filter((f) => f.id !== id));
+    setFields(fields => fields.filter((f) => f.id !== id));
     if (selectedFieldId === id) {
       setSelectedFieldId(null);
     }
-  }, [fields, setFields, selectedFieldId]);
+  }, [setFields, selectedFieldId]);
 
-  // Duplicate field
+  // Duplicate field - uses functional update to avoid dependency on fields
   const handleDuplicateField = useCallback((id: string) => {
-    const field = fields.find((f) => f.id === id);
-    if (field) {
+    setFields(fields => {
+      const field = fields.find((f) => f.id === id);
+      if (!field) return fields;
+
       const newField: FormField = {
         ...field,
         id: generateId(),
@@ -122,14 +128,16 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
         label: `${field.label} (Copy)`,
       };
       const index = fields.findIndex((f) => f.id === id);
-      setFields([
+      const newFields = [
         ...fields.slice(0, index + 1),
         newField,
         ...fields.slice(index + 1),
-      ]);
+      ];
+
       setSelectedFieldId(newField.id);
-    }
-  }, [fields, setFields]);
+      return newFields;
+    });
+  }, [setFields]);
 
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
@@ -149,11 +157,13 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
       return;
     }
 
-    // Reordering existing fields
+    // Reordering existing fields - uses functional update to avoid dependency on fields
     if (active.id !== over.id) {
-      const oldIndex = fields.findIndex((f) => f.id === active.id);
-      const newIndex = fields.findIndex((f) => f.id === over.id);
-      setFields(arrayMove(fields, oldIndex, newIndex));
+      setFields(fields => {
+        const oldIndex = fields.findIndex((f) => f.id === active.id);
+        const newIndex = fields.findIndex((f) => f.id === over.id);
+        return arrayMove(fields, oldIndex, newIndex);
+      });
     }
   };
 

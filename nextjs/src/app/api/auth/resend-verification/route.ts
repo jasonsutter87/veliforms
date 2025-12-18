@@ -18,13 +18,14 @@ import {
   getEmailRateLimitHeaders,
 } from "@/lib/email-rate-limit";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
+import { authLogger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
-  // Strict rate limit for resend (3 per hour)
+  // Rate limit: 3 requests per minute per IP
   const rateLimit = await checkRateLimit(req, {
-    keyPrefix: "resend-verify",
+    keyPrefix: "resend-verification",
     maxRequests: 3,
-    windowMs: 60 * 60 * 1000, // 1 hour
+    windowMs: 60000, // 1 minute
   });
 
   if (!rateLimit.allowed) {
@@ -116,12 +117,12 @@ export async function POST(req: NextRequest) {
     try {
       await sendEmailVerification(email, verifyUrl);
     } catch (emailError) {
-      console.error("Failed to send verification email:", emailError);
+      authLogger.error({ emailError, email }, "Failed to send verification email");
     }
 
     return successResponse();
   } catch (err) {
-    console.error("Resend verification error:", err);
+    authLogger.error({ err }, "Resend verification failed");
     return errorResponse(ErrorCodes.SERVER_ERROR, {
       message: "An error occurred",
     });

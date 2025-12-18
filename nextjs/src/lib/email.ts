@@ -6,6 +6,8 @@
 // Note: Install resend with `npm install resend` when ready to use
 // import { Resend } from 'resend';
 
+import { apiLogger } from "./logger";
+
 const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@veilforms.com";
 const FROM_NAME = "VeilForms";
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://veilforms.com";
@@ -23,8 +25,7 @@ export async function sendEmailVerification(
   verifyUrl: string
 ): Promise<EmailResult> {
   // TODO: Implement with Resend when API key is configured
-  console.log(`[DEV] Would send verification email to ${email}`);
-  console.log(`[DEV] Verify URL: ${verifyUrl}`);
+  apiLogger.debug({ to: email, type: 'verification', verifyUrl }, "Would send verification email (dev mode)");
   return { provider: "dev", id: "dev-" + Date.now() };
 }
 
@@ -36,8 +37,7 @@ export async function sendPasswordResetEmail(
   resetUrl: string
 ): Promise<EmailResult> {
   // TODO: Implement with Resend when API key is configured
-  console.log(`[DEV] Would send password reset email to ${email}`);
-  console.log(`[DEV] Reset URL: ${resetUrl}`);
+  apiLogger.debug({ to: email, type: 'password-reset', resetUrl }, "Would send password reset email (dev mode)");
   return { provider: "dev", id: "dev-" + Date.now() };
 }
 
@@ -48,7 +48,7 @@ export async function sendWelcomeEmail(
   email: string
 ): Promise<EmailResult | null> {
   // TODO: Implement with Resend when API key is configured
-  console.log(`[DEV] Would send welcome email to ${email}`);
+  apiLogger.debug({ to: email, type: 'welcome' }, "Would send welcome email (dev mode)");
   return { provider: "dev", id: "dev-" + Date.now() };
 }
 

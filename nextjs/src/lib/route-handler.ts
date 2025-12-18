@@ -38,21 +38,29 @@ export interface AuthenticatedContext {
   rateLimit?: RateLimitResult;
 }
 
-// Handler types
-type PublicHandler = (req: NextRequest) => Promise<NextResponse>;
-type AuthenticatedHandler = (
+// Handler types - RouteContext is the Next.js route context (contains params)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RouteContext = any;
+
+type PublicHandler<T extends RouteContext = RouteContext> = (
   req: NextRequest,
-  ctx: AuthenticatedContext
+  routeCtx?: T
+) => Promise<NextResponse>;
+
+type AuthenticatedHandler<T extends RouteContext = RouteContext> = (
+  req: NextRequest,
+  ctx: AuthenticatedContext,
+  routeCtx?: T
 ) => Promise<NextResponse>;
 
 /**
  * Wrap a public route with optional rate limiting
  */
-export function publicRoute(
-  handler: PublicHandler,
+export function publicRoute<T extends RouteContext = RouteContext>(
+  handler: PublicHandler<T>,
   options?: RouteOptions
-): (req: NextRequest) => Promise<NextResponse> {
-  return async (req: NextRequest) => {
+): (req: NextRequest, routeCtx?: T) => Promise<NextResponse> {
+  return async (req: NextRequest, routeCtx?: T) => {
     // Rate limiting
     if (options?.rateLimit) {
       const result = await checkRateLimit(req, options.rateLimit);
@@ -61,18 +69,18 @@ export function publicRoute(
       }
     }
 
-    return handler(req);
+    return handler(req, routeCtx);
   };
 }
 
 /**
  * Wrap an authenticated route with rate limiting, auth, and optional CSRF
  */
-export function authRoute(
-  handler: AuthenticatedHandler,
+export function authRoute<T extends RouteContext = RouteContext>(
+  handler: AuthenticatedHandler<T>,
   options?: RouteOptions
-): (req: NextRequest) => Promise<NextResponse> {
-  return async (req: NextRequest) => {
+): (req: NextRequest, routeCtx?: T) => Promise<NextResponse> {
+  return async (req: NextRequest, routeCtx?: T) => {
     // Rate limiting
     let rateLimitResult: RateLimitResult | undefined;
     if (options?.rateLimit) {
@@ -99,7 +107,7 @@ export function authRoute(
       );
     }
 
-    return handler(req, { user: auth.user, rateLimit: rateLimitResult });
+    return handler(req, { user: auth.user, rateLimit: rateLimitResult }, routeCtx);
   };
 }
 

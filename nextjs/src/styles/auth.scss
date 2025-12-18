@@ -61,6 +61,70 @@
   }
 }
 
+// OAuth Buttons
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.btn-oauth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+
+  &:hover {
+    background: var(--surface);
+    border-color: var(--text-muted);
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.btn-github:hover {
+  border-color: #333;
+}
+
+.btn-google:hover {
+  border-color: #4285f4;
+}
+
+// Auth Divider
+.auth-divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  span {
+    padding: 0 16px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
 // Form Elements
 .form-group {
   margin-bottom: 20px;

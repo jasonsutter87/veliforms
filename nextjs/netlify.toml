@@ -1,0 +1,48 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Next.js requires the Netlify Next.js Runtime
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Security headers for all pages
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=15768000; includeSubDomains; preload"
+    Content-Security-Policy = """
+      default-src 'self'; \
+      script-src 'self' 'unsafe-inline' 'unsafe-eval'; \
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
+      img-src 'self' data: https:; \
+      font-src 'self' data: https://fonts.gstatic.com; \
+      connect-src 'self' https://*.netlify.app https://*.netlify.com https://api.stripe.com; \
+      form-action 'self'; \
+      frame-ancestors 'none'; \
+      base-uri 'self'; \
+      upgrade-insecure-requests;
+    """
+    Permissions-Policy = """
+      geolocation=(), \
+      microphone=(), \
+      camera=(), \
+      payment=(), \
+      usb=(), \
+      magnetometer=(), \
+      gyroscope=(), \
+      accelerometer=()
+    """
+
+# Cache static assets
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

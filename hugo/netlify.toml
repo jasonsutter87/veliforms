@@ -5,6 +5,52 @@
 [build.environment]
   HUGO_VERSION = "0.147.4"
 
+# Redirect auth/dashboard/api to Next.js app (app.veilforms.com)
+# Uncomment these when deploying the Next.js app to production
+
+# [[redirects]]
+#   from = "/login"
+#   to = "https://app.veilforms.com/login"
+#   status = 200
+#   force = true
+
+# [[redirects]]
+#   from = "/register"
+#   to = "https://app.veilforms.com/register"
+#   status = 200
+#   force = true
+
+# [[redirects]]
+#   from = "/forgot"
+#   to = "https://app.veilforms.com/forgot"
+#   status = 200
+#   force = true
+
+# [[redirects]]
+#   from = "/reset"
+#   to = "https://app.veilforms.com/reset"
+#   status = 200
+#   force = true
+
+# [[redirects]]
+#   from = "/verify"
+#   to = "https://app.veilforms.com/verify"
+#   status = 200
+#   force = true
+
+# [[redirects]]
+#   from = "/dashboard/*"
+#   to = "https://app.veilforms.com/dashboard/:splat"
+#   status = 200
+#   force = true
+
+# [[redirects]]
+#   from = "/api/*"
+#   to = "https://app.veilforms.com/api/:splat"
+#   status = 200
+#   force = true
+
+# Current API redirect (to Netlify Functions) - remove when switching to Next.js
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

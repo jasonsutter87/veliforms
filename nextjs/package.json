@@ -11,7 +11,9 @@
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@netlify/blobs": "^10.4.4",
+    "@netlify/plugin-nextjs": "^5.15.2",
     "bcryptjs": "^3.0.3",
     "dompurify": "^3.3.1",
     "jsonwebtoken": "^9.0.3",
@@ -19,6 +21,7 @@
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "sass": "^1.97.0",
+    "stripe": "^20.1.0",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

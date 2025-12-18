@@ -214,3 +214,23 @@ export function validatePassword(password: unknown): ValidationResult {
   }
   return { valid: true };
 }
+
+/**
+ * Parse URL path to extract parts after a prefix
+ */
+export function parseUrlPath(urlString: string, prefix: string): string[] {
+  try {
+    const url = new URL(urlString);
+    const path = url.pathname;
+    const prefixIndex = path.indexOf(prefix);
+
+    if (prefixIndex === -1) {
+      return [];
+    }
+
+    const remainder = path.slice(prefixIndex + prefix.length);
+    return remainder.split("/").filter((p) => p.length > 0);
+  } catch {
+    return [];
+  }
+}

@@ -40,6 +40,10 @@ export interface Form {
   submissionCount: number;
   createdAt: string;
   updatedAt?: string;
+  status?: string;
+  deletedAt?: string;
+  lastSubmissionAt?: string;
+  keyRotatedAt?: string;
 }
 
 export interface FormSettings {

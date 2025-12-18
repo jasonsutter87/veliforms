@@ -1,0 +1,216 @@
+/**
+ * VeilForms - Form Builder Component
+ */
+
+"use client";
+
+import { useState, useCallback } from "react";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { FieldPalette } from "./FieldPalette";
+import { FormCanvas } from "./FormCanvas";
+import { FieldProperties } from "./FieldProperties";
+import { SortableField } from "./SortableField";
+import type { FormField } from "@/store/dashboard";
+
+interface FormBuilderProps {
+  formId: string;
+  initialFields?: FormField[];
+  onSave: (fields: FormField[]) => Promise<void>;
+  onBack: () => void;
+}
+
+// Generate unique ID
+function generateId(): string {
+  return `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Default field configurations
+const FIELD_DEFAULTS: Record<string, Partial<FormField>> = {
+  text: { type: "text", label: "Text Field", placeholder: "Enter text..." },
+  email: { type: "email", label: "Email", placeholder: "email@example.com" },
+  textarea: { type: "textarea", label: "Message", placeholder: "Enter your message..." },
+  number: { type: "number", label: "Number", placeholder: "0" },
+  phone: { type: "phone", label: "Phone", placeholder: "(555) 555-5555" },
+  select: { type: "select", label: "Dropdown", options: ["Option 1", "Option 2", "Option 3"] },
+  checkbox: { type: "checkbox", label: "Checkbox" },
+  radio: { type: "radio", label: "Radio Group", options: ["Option 1", "Option 2", "Option 3"] },
+  date: { type: "date", label: "Date" },
+  url: { type: "url", label: "Website", placeholder: "https://" },
+  hidden: { type: "hidden", label: "Hidden Field", name: "hidden_field" },
+  heading: { type: "heading", label: "Section Heading" },
+  paragraph: { type: "paragraph", label: "Add description text here..." },
+  divider: { type: "divider", label: "" },
+};
+
+export function FormBuilder({ formId, initialFields = [], onSave, onBack }: FormBuilderProps) {
+  const [fields, setFields] = useState<FormField[]>(initialFields);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const selectedField = fields.find((f) => f.id === selectedFieldId);
+
+  // Add field from palette
+  const handleAddField = useCallback((fieldType: string) => {
+    const defaults = FIELD_DEFAULTS[fieldType] || { type: fieldType, label: fieldType };
+    const newField: FormField = {
+      id: generateId(),
+      name: `${fieldType}_${Date.now()}`,
+      ...defaults,
+    } as FormField;
+
+    setFields((prev) => [...prev, newField]);
+    setSelectedFieldId(newField.id);
+  }, []);
+
+  // Update field
+  const handleUpdateField = useCallback((id: string, updates: Partial<FormField>) => {
+    setFields((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, ...updates } : f))
+    );
+  }, []);
+
+  // Delete field
+  const handleDeleteField = useCallback((id: string) => {
+    setFields((prev) => prev.filter((f) => f.id !== id));
+    if (selectedFieldId === id) {
+      setSelectedFieldId(null);
+    }
+  }, [selectedFieldId]);
+
+  // Duplicate field
+  const handleDuplicateField = useCallback((id: string) => {
+    const field = fields.find((f) => f.id === id);
+    if (field) {
+      const newField: FormField = {
+        ...field,
+        id: generateId(),
+        name: `${field.name}_copy`,
+        label: `${field.label} (Copy)`,
+      };
+      const index = fields.findIndex((f) => f.id === id);
+      setFields((prev) => [
+        ...prev.slice(0, index + 1),
+        newField,
+        ...prev.slice(index + 1),
+      ]);
+      setSelectedFieldId(newField.id);
+    }
+  }, [fields]);
+
+  // Drag handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    // If dragging from palette
+    if (active.id.toString().startsWith("palette-")) {
+      const fieldType = active.id.toString().replace("palette-", "");
+      handleAddField(fieldType);
+      return;
+    }
+
+    // Reordering existing fields
+    if (active.id !== over.id) {
+      setFields((items) => {
+        const oldIndex = items.findIndex((f) => f.id === active.id);
+        const newIndex = items.findIndex((f) => f.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  // Save form
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave(fields);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const activeField = activeId ? fields.find((f) => f.id === activeId) : null;
+
+  return (
+    <div className="form-builder-view" style={{ display: "block" }}>
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="form-builder-layout">
+          {/* Field Palette */}
+          <FieldPalette onAddField={handleAddField} />
+
+          {/* Form Canvas */}
+          <div className="form-canvas-wrapper">
+            <div className="canvas-header">
+              <button className="btn btn-secondary" onClick={onBack}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Back</span>
+              </button>
+              <div className="canvas-actions">
+                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                  {saving ? "Saving..." : "Save Form"}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-canvas">
+              {fields.length === 0 ? (
+                <div className="canvas-dropzone">
+                  <div className="dropzone-hint">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="48" height="48">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <p>Drag fields here to build your form</p>
+                    <p className="hint-sub">or click a field type to add it</p>
+                  </div>
+                </div>
+              ) : (
+                <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+                  <FormCanvas
+                    fields={fields}
+                    selectedFieldId={selectedFieldId}
+                    onSelectField={setSelectedFieldId}
+                    onDeleteField={handleDeleteField}
+                    onDuplicateField={handleDuplicateField}
+                  />
+                </SortableContext>
+              )}
+            </div>
+          </div>
+
+          {/* Field Properties Panel */}
+          {selectedField && (
+            <FieldProperties
+              field={selectedField}
+              onUpdate={(updates) => handleUpdateField(selectedField.id, updates)}
+              onClose={() => setSelectedFieldId(null)}
+            />
+          )}
+        </div>
+
+        {/* Drag Overlay */}
+        <DragOverlay>
+          {activeField && (
+            <div className="field-item dragging">
+              <span className="field-label">{activeField.label}</span>
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+    </div>
+  );
+}

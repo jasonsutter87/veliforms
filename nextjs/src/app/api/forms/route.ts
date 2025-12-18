@@ -12,6 +12,7 @@ import { validateFormName } from "@/lib/validation";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 import { generateKeyPair } from "@/lib/encryption";
 import { getFormLimit } from "@/lib/subscription-limits";
+import { createPrivateKeyDownloadToken } from "@/lib/private-key-tokens";
 
 export const GET = authRoute(async (req, { user }) => {
   try {
@@ -124,6 +125,17 @@ export const POST = authRoute(async (req, { user }) => {
       auditCtx
     );
 
+    // Generate one-time download token for private key
+    const downloadToken = await createPrivateKeyDownloadToken(
+      form.id,
+      user.userId,
+      JSON.stringify(privateKey)
+    );
+
+    // Build download URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://veilforms.com";
+    const downloadUrl = `${baseUrl}/api/forms/${form.id}/download-key?token=${downloadToken}`;
+
     return NextResponse.json(
       {
         form: {
@@ -132,11 +144,15 @@ export const POST = authRoute(async (req, { user }) => {
           status: "active",
           createdAt: form.createdAt,
           publicKey: form.publicKey,
-          privateKey: JSON.stringify(privateKey), // Only returned on creation!
           settings: form.settings,
         },
+        privateKeyDownload: {
+          url: downloadUrl,
+          token: downloadToken,
+          expiresIn: "15 minutes",
+        },
         warning:
-          "Save your private key immediately! This is the only time it will be shown. We cannot recover it.",
+          "Download your private key immediately! The download link expires in 15 minutes and can only be used once. We cannot recover it.",
       },
       { status: 201 }
     );

@@ -16,10 +16,11 @@ import { errorResponse, ErrorCodes } from "@/lib/errors";
 import { buildResetUrl } from "@/lib/url-helpers";
 
 export async function POST(req: NextRequest) {
-  // Stricter rate limit for password reset (3 per minute)
+  // Stricter rate limit for password reset (3 per hour)
   const rateLimit = await checkRateLimit(req, {
     keyPrefix: "forgot",
     maxRequests: 3,
+    windowMs: 60 * 60 * 1000, // 1 hour
   });
 
   if (!rateLimit.allowed) {

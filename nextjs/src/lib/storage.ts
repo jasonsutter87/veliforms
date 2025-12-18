@@ -4,6 +4,8 @@
  */
 
 import { getStore } from "@netlify/blobs";
+import { storageLogger } from "./logger";
+import { retryStorage } from "./retry";
 
 // Store names
 const STORES = {
@@ -31,6 +33,17 @@ export interface User {
   emailVerifiedAt: string | null;
 }
 
+export interface FormField {
+  id?: string;
+  type: string;
+  label: string;
+  name: string;
+  required?: boolean;
+  placeholder?: string;
+  options?: string[];
+  validation?: Record<string, unknown>;
+}
+
 export interface Form {
   id: string;
   userId: string;
@@ -44,6 +57,7 @@ export interface Form {
   deletedAt?: string;
   lastSubmissionAt?: string;
   keyRotatedAt?: string;
+  fields?: FormField[];
 }
 
 export interface FormSettings {
@@ -119,27 +133,36 @@ export async function createUser(
 }
 
 export async function getUser(email: string): Promise<User | null> {
-  const users = store(STORES.USERS);
-  try {
-    return (await users.get(email.toLowerCase(), { type: "json" })) as User | null;
-  } catch {
-    return null;
-  }
+  return retryStorage(async () => {
+    const users = store(STORES.USERS);
+    try {
+      const user = (await users.get(email.toLowerCase(), { type: "json" })) as User | null;
+      storageLogger.debug({ email, found: !!user }, 'User lookup');
+      return user;
+    } catch (error) {
+      storageLogger.warn({ email, error }, 'User lookup failed');
+      return null;
+    }
+  }, 'getUser');
 }
 
 export async function getUserById(userId: string): Promise<User | null> {
-  const users = store(STORES.USERS);
-  try {
-    const mapping = (await users.get(`id_${userId}`, { type: "json" })) as {
-      email: string;
-    } | null;
-    if (mapping?.email) {
-      return await getUser(mapping.email);
+  return retryStorage(async () => {
+    const users = store(STORES.USERS);
+    try {
+      const mapping = (await users.get(`id_${userId}`, { type: "json" })) as {
+        email: string;
+      } | null;
+      if (mapping?.email) {
+        return await getUser(mapping.email);
+      }
+      storageLogger.debug({ userId, found: false }, 'User lookup by ID');
+      return null;
+    } catch (error) {
+      storageLogger.warn({ userId, error }, 'User lookup by ID failed');
+      return null;
     }
-    return null;
-  } catch {
-    return null;
-  }
+  }, 'getUserById');
 }
 
 export async function updateUser(
@@ -322,6 +345,7 @@ export async function createForm(
     name: string;
     publicKey: string;
     settings?: Partial<FormSettings>;
+    fields?: FormField[];
   }
 ): Promise<Form> {
   const forms = store(STORES.FORMS);
@@ -358,6 +382,7 @@ export async function createForm(
     },
     submissionCount: 0,
     createdAt: new Date().toISOString(),
+    fields: formData.fields,
   };
 
   await forms.setJSON(formId, form);
@@ -378,12 +403,17 @@ export async function createForm(
 }
 
 export async function getForm(formId: string): Promise<Form | null> {
-  const forms = store(STORES.FORMS);
-  try {
-    return (await forms.get(formId, { type: "json" })) as Form | null;
-  } catch {
-    return null;
-  }
+  return retryStorage(async () => {
+    const forms = store(STORES.FORMS);
+    try {
+      const form = (await forms.get(formId, { type: "json" })) as Form | null;
+      storageLogger.debug({ formId, found: !!form }, 'Form lookup');
+      return form;
+    } catch (error) {
+      storageLogger.warn({ formId, error }, 'Form lookup failed');
+      return null;
+    }
+  }, 'getForm');
 }
 
 export async function updateForm(
@@ -428,17 +458,22 @@ export async function deleteForm(
 }
 
 export async function getUserForms(userId: string): Promise<Form[]> {
-  const forms = store(STORES.FORMS);
-  const userFormsKey = `user_forms_${userId}`;
+  return retryStorage(async () => {
+    const forms = store(STORES.FORMS);
+    const userFormsKey = `user_forms_${userId}`;
 
-  try {
-    const formIds =
-      ((await forms.get(userFormsKey, { type: "json" })) as string[] | null) || [];
-    const formDetails = await Promise.all(formIds.map((id) => getForm(id)));
-    return formDetails.filter((f): f is Form => f !== null);
-  } catch {
-    return [];
-  }
+    try {
+      const formIds =
+        ((await forms.get(userFormsKey, { type: "json" })) as string[] | null) || [];
+      const formDetails = await Promise.all(formIds.map((id) => getForm(id)));
+      const validForms = formDetails.filter((f): f is Form => f !== null);
+      storageLogger.debug({ userId, count: validForms.length }, 'User forms lookup');
+      return validForms;
+    } catch (error) {
+      storageLogger.warn({ userId, error }, 'User forms lookup failed');
+      return [];
+    }
+  }, 'getUserForms');
 }
 
 // === API KEY OPERATIONS ===
@@ -539,6 +574,13 @@ interface SubmissionsResult {
   offset: number;
 }
 
+export interface PaginatedResult<T> {
+  items: T[];
+  nextCursor?: string;
+  hasMore: boolean;
+  total: number;
+}
+
 export async function getSubmissions(
   formId: string,
   limit = 50,
@@ -599,7 +641,7 @@ export async function deleteSubmission(
     index.submissions = index.submissions.filter((s) => s.id !== submissionId);
     await submissions.setJSON("_index", index);
   } catch (e) {
-    console.warn("Index update failed:", e);
+    storageLogger.warn({ formId, submissionId, error: e }, 'Submission index update failed');
   }
 
   return true;
@@ -622,4 +664,57 @@ export async function deleteAllSubmissions(formId: string): Promise<number> {
   } catch {
     return 0;
   }
+}
+
+export async function getSubmissionsPaginated(
+  formId: string,
+  options: {
+    cursor?: string;
+    limit?: number;
+  } = {}
+): Promise<PaginatedResult<Submission>> {
+  const { cursor, limit = 50 } = options;
+  const submissions = store(`veilforms-${formId}`);
+  const indexKey = "_index";
+
+  const index = (await submissions.get(indexKey, { type: "json" })) as {
+    submissions: Array<{ id: string; createdAt: string }>;
+  } | null;
+
+  if (!index || !index.submissions.length) {
+    return { items: [], hasMore: false, total: 0 };
+  }
+
+  // Sort by createdAt descending
+  const sortedIndex = [...index.submissions].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  // Find cursor position
+  let startIndex = 0;
+  if (cursor) {
+    const cursorIndex = sortedIndex.findIndex(s => s.id === cursor);
+    if (cursorIndex !== -1) {
+      startIndex = cursorIndex + 1;
+    }
+  }
+
+  // Get slice
+  const slice = sortedIndex.slice(startIndex, startIndex + limit);
+  const hasMore = startIndex + limit < sortedIndex.length;
+
+  // Fetch full submissions
+  const items = await Promise.all(
+    slice.map(async ({ id }) => {
+      const data = await submissions.get(id, { type: "json" });
+      return data as Submission;
+    })
+  );
+
+  return {
+    items: items.filter(Boolean),
+    nextCursor: hasMore ? slice[slice.length - 1]?.id : undefined,
+    hasMore,
+    total: sortedIndex.length,
+  };
 }

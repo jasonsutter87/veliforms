@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { authLogger } from "@/lib/logger";
 import {
   hashPassword,
   createToken,
@@ -17,14 +18,37 @@ import {
   checkEmailRateLimit,
   getEmailRateLimitHeaders,
 } from "@/lib/email-rate-limit";
+import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 import { isValidEmail } from "@/lib/validation";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 import { buildVerificationUrl } from "@/lib/url-helpers";
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 3 requests per hour per IP
+  const rateLimit = await checkRateLimit(req, {
+    keyPrefix: "register",
+    maxRequests: 3,
+    windowMs: 60 * 60 * 1000, // 1 hour
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: "Too many registration attempts",
+        retryAfter: rateLimit.retryAfter,
+      },
+      {
+        status: 429,
+        headers: getRateLimitHeaders(rateLimit),
+      }
+    );
+  }
+
+  let email = '';
   try {
     const body = await req.json();
-    const { email, password } = body;
+    email = body.email;
+    const { password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -92,7 +116,7 @@ export async function POST(req: NextRequest) {
 
     // Send verification email (fire and forget)
     sendEmailVerification(email, verifyUrl).catch((err) => {
-      console.error("Verification email failed:", err);
+      authLogger.error({ err, email }, 'Verification email failed');
     });
 
     // Create JWT token
@@ -113,7 +137,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
-    console.error("Register error:", err);
+    authLogger.error({ err, email }, 'Registration failed');
     return errorResponse(ErrorCodes.SERVER_ERROR, {
       message: "Registration failed",
     });

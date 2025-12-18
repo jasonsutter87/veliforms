@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getStore } from "@netlify/blobs";
+import { apiLogger } from "@/lib/logger";
 import { updateForm, getUserById } from "@/lib/storage";
 import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 import { fireWebhookWithRetry } from "@/lib/webhook-retry";
@@ -53,7 +54,7 @@ async function updateIndex(
 
     await store.setJSON(indexKey, index);
   } catch (e) {
-    console.warn("Index update failed:", e);
+    apiLogger.warn({ submissionId, error: e }, 'Index update failed');
   }
 }
 
@@ -99,7 +100,7 @@ async function verifyRecaptcha(
       score: score,
     };
   } catch (error) {
-    console.error("reCAPTCHA verification error:", error);
+    apiLogger.error({ error }, 'reCAPTCHA verification error');
     return {
       success: false,
       reason: "Verification service error",
@@ -122,29 +123,39 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Check payload size before parsing
+  // Check content-length header first (quick reject)
   const contentLength = req.headers.get("content-length");
   if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_SIZE) {
     return NextResponse.json(
-      { error: "Payload too large. Maximum size is 1MB" },
+      { error: "Payload too large" },
       { status: 413 }
     );
   }
 
+  // Then read body with size limit
+  let body;
   try {
-    // Read body with size validation
-    const rawBody = await req.text();
-    const bodySize = new TextEncoder().encode(rawBody).length;
-    if (bodySize > MAX_PAYLOAD_SIZE) {
+    const text = await req.text();
+    if (text.length > MAX_PAYLOAD_SIZE) {
       return NextResponse.json(
-        { error: "Payload too large. Maximum size is 1MB" },
+        { error: "Payload too large" },
         { status: 413 }
       );
     }
+    body = JSON.parse(text);
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON" },
+      { status: 400 }
+    );
+  }
 
-    const body = JSON.parse(rawBody);
-    const { formId, submissionId, payload, timestamp, meta, spamProtection } =
-      body;
+  let formId = '';
+  let submissionId = '';
+  try {
+    formId = body.formId;
+    submissionId = body.submissionId;
+    const { payload, timestamp, meta, spamProtection } = body;
 
     // Validate required fields
     if (!formId || !submissionId || !payload) {
@@ -233,7 +244,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (honeypotValue !== "") {
-        console.warn("[SPAM] Honeypot triggered for form:", formId);
+        apiLogger.warn({ formId }, 'Honeypot triggered - spam detected');
         return NextResponse.json({ error: "Spam detected" }, { status: 403 });
       }
     }
@@ -252,9 +263,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (!recaptchaSecretKey) {
-        console.error(
-          "[CONFIG] reCAPTCHA enabled but no secret key configured"
-        );
+        apiLogger.error({ formId }, 'reCAPTCHA enabled but no secret key configured');
         return NextResponse.json(
           { error: "reCAPTCHA not properly configured" },
           { status: 500 }
@@ -268,9 +277,9 @@ export async function POST(req: NextRequest) {
       );
 
       if (!recaptchaValid.success) {
-        console.warn(
-          "[SPAM] reCAPTCHA verification failed:",
-          recaptchaValid.reason
+        apiLogger.warn(
+          { formId, reason: recaptchaValid.reason },
+          'reCAPTCHA verification failed - spam detected'
         );
         return NextResponse.json(
           {
@@ -350,7 +359,7 @@ export async function POST(req: NextRequest) {
       const webhookSecret = (form.settings as { webhookSecret?: string }).webhookSecret;
       fireWebhookWithRetry(form.settings.webhookUrl, submission, webhookSecret).catch(
         (err) => {
-          console.error("Webhook delivery error:", err.message);
+          apiLogger.error({ formId, submissionId, error: err.message }, 'Webhook delivery error');
         }
       );
     }
@@ -369,7 +378,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(successResponse);
   } catch (error) {
-    console.error("Submission error:", error);
+    apiLogger.error({ error, formId, submissionId }, 'Submission failed');
     return errorResponse(ErrorCodes.SERVER_ERROR, {
       message: "Submission failed",
     });

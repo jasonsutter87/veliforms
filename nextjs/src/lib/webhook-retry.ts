@@ -8,6 +8,7 @@
  */
 
 import { getStore } from "@netlify/blobs";
+import { webhookLogger } from "./logger";
 
 const WEBHOOK_RETRY_STORE = "vf-webhook-retry";
 const MAX_RETRIES = 3;
@@ -232,7 +233,7 @@ async function addToFailedIndex(
 
     await store.setJSON(indexKey, index);
   } catch (e) {
-    console.warn("Failed webhook index update error:", e);
+    webhookLogger.warn({ formId, error: e }, 'Failed webhook index update error');
   }
 }
 
@@ -261,7 +262,7 @@ async function logWebhookDelivery(
 
     await store.setJSON(logKey, log);
   } catch (e) {
-    console.warn("Webhook delivery log error:", e);
+    webhookLogger.warn({ formId, submissionId, error: e }, 'Webhook delivery log error');
   }
 }
 

@@ -27,6 +27,9 @@ vi.mock('@/lib/audit');
 vi.mock('@/lib/csrf', () => ({
   validateCsrfToken: vi.fn(() => true),
 }));
+vi.mock('@/lib/private-key-tokens', () => ({
+  createPrivateKeyDownloadToken: vi.fn(() => Promise.resolve('test-token-12345')),
+}));
 
 // Mock Netlify Blobs
 vi.mock('@netlify/blobs', () => ({
@@ -209,7 +212,11 @@ describe('Forms API Routes', () => {
           id: newForm.id,
           name: newForm.name,
           publicKey: expect.any(String),
-          privateKey: expect.any(String),
+        },
+        privateKeyDownload: {
+          url: expect.any(String),
+          token: expect.any(String),
+          expiresIn: expect.any(String),
         },
         warning: expect.stringContaining('private key'),
       });

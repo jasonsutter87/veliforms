@@ -28,7 +28,7 @@ export function createTestUser(options: CreateUserOptions = {}): TestUser {
   userCounter++;
   const id = `test_user_${Date.now()}_${userCounter}`;
 
-  return {
+  const user: TestUser = {
     id,
     email: options.email || `test${userCounter}_${Date.now()}@example.com`,
     passwordHash: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.S2FJ/H3P.3J.1K', // "TestPassword123"
@@ -37,8 +37,13 @@ export function createTestUser(options: CreateUserOptions = {}): TestUser {
     forms: [],
     emailVerified: options.emailVerified ?? false,
     emailVerifiedAt: options.emailVerified ? new Date().toISOString() : null,
-    oauthProvider: options.oauthProvider,
   };
+
+  if (options.oauthProvider) {
+    user.oauthProvider = options.oauthProvider;
+  }
+
+  return user;
 }
 
 /**

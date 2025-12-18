@@ -33,7 +33,6 @@ export default function DashboardLayout({
       useDashboardStore.getState().setUser({
         id: user.id,
         email: user.email,
-        name: undefined,
         plan: user.subscription as "free" | "pro" | "enterprise",
       });
     }

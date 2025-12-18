@@ -8,6 +8,7 @@ import {
   getFailedWebhooks,
   retryFailedWebhook,
 } from './webhook-retry';
+import { webhookLogger } from './logger';
 
 // Mock @netlify/blobs
 const mockStore = {
@@ -20,12 +21,19 @@ vi.mock('@netlify/blobs', () => ({
   getStore: vi.fn(() => mockStore),
 }));
 
+// Mock logger - must be hoisted, so we use vi.fn() directly
+vi.mock('./logger', () => ({
+  webhookLogger: {
+    warn: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 // Mock global fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
-
-// Mock console to avoid cluttering test output
-const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
 describe('webhook-retry', () => {
   beforeEach(() => {
@@ -35,7 +43,7 @@ describe('webhook-retry', () => {
 
   afterEach(() => {
     vi.useRealTimers();
-    consoleWarnSpy.mockClear();
+    vi.mocked(webhookLogger.warn).mockClear();
   });
 
   const mockSubmission = {
@@ -674,7 +682,7 @@ describe('webhook-retry', () => {
         success: true,
       });
 
-      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(webhookLogger.warn).toHaveBeenCalled();
     });
   });
 
@@ -742,7 +750,7 @@ describe('webhook-retry', () => {
         success: false,
       });
 
-      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(webhookLogger.warn).toHaveBeenCalled();
     });
   });
 });

@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { FieldPalette } from "./FieldPalette";
@@ -12,6 +12,7 @@ import { FormCanvas } from "./FormCanvas";
 import { FieldProperties } from "./FieldProperties";
 import { SortableField } from "./SortableField";
 import type { FormField } from "@/store/dashboard";
+import { useHistory } from "@/hooks/useHistory";
 
 interface FormBuilderProps {
   formId: string;
@@ -44,12 +45,43 @@ const FIELD_DEFAULTS: Record<string, Partial<FormField>> = {
 };
 
 export function FormBuilder({ formId, initialFields = [], onSave, onBack }: FormBuilderProps) {
-  const [fields, setFields] = useState<FormField[]>(initialFields);
+  const {
+    state: fields,
+    pushState: setFields,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useHistory<FormField[]>(initialFields);
+
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const selectedField = fields.find((f) => f.id === selectedFieldId);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd (Mac) or Ctrl (Windows/Linux)
+      const isMod = e.metaKey || e.ctrlKey;
+
+      if (isMod && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo) {
+          undo();
+        }
+      } else if (isMod && (e.key === 'Z' || (e.shiftKey && e.key === 'z'))) {
+        e.preventDefault();
+        if (canRedo) {
+          redo();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo, canUndo, canRedo]);
 
   // Add field from palette
   const handleAddField = useCallback((fieldType: string) => {
@@ -60,24 +92,24 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
       ...defaults,
     } as FormField;
 
-    setFields((prev) => [...prev, newField]);
+    setFields([...fields, newField]);
     setSelectedFieldId(newField.id);
-  }, []);
+  }, [fields, setFields]);
 
   // Update field
   const handleUpdateField = useCallback((id: string, updates: Partial<FormField>) => {
-    setFields((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, ...updates } : f))
+    setFields(
+      fields.map((f) => (f.id === id ? { ...f, ...updates } : f))
     );
-  }, []);
+  }, [fields, setFields]);
 
   // Delete field
   const handleDeleteField = useCallback((id: string) => {
-    setFields((prev) => prev.filter((f) => f.id !== id));
+    setFields(fields.filter((f) => f.id !== id));
     if (selectedFieldId === id) {
       setSelectedFieldId(null);
     }
-  }, [selectedFieldId]);
+  }, [fields, setFields, selectedFieldId]);
 
   // Duplicate field
   const handleDuplicateField = useCallback((id: string) => {
@@ -90,14 +122,14 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
         label: `${field.label} (Copy)`,
       };
       const index = fields.findIndex((f) => f.id === id);
-      setFields((prev) => [
-        ...prev.slice(0, index + 1),
+      setFields([
+        ...fields.slice(0, index + 1),
         newField,
-        ...prev.slice(index + 1),
+        ...fields.slice(index + 1),
       ]);
       setSelectedFieldId(newField.id);
     }
-  }, [fields]);
+  }, [fields, setFields]);
 
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
@@ -119,11 +151,9 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
 
     // Reordering existing fields
     if (active.id !== over.id) {
-      setFields((items) => {
-        const oldIndex = items.findIndex((f) => f.id === active.id);
-        const newIndex = items.findIndex((f) => f.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
+      const oldIndex = fields.findIndex((f) => f.id === active.id);
+      const newIndex = fields.findIndex((f) => f.id === over.id);
+      setFields(arrayMove(fields, oldIndex, newIndex));
     }
   };
 
@@ -160,6 +190,28 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
                 <span>Back</span>
               </button>
               <div className="canvas-actions">
+                <button
+                  className="btn btn-secondary"
+                  onClick={undo}
+                  disabled={!canUndo}
+                  title="Undo (Cmd/Ctrl+Z)"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                    <path d="M3 7v6h6"></path>
+                    <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+                  </svg>
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={redo}
+                  disabled={!canRedo}
+                  title="Redo (Cmd/Ctrl+Shift+Z)"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                    <path d="M21 7v6h-6"></path>
+                    <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"></path>
+                  </svg>
+                </button>
                 <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
                   {saving ? "Saving..." : "Save Form"}
                 </button>

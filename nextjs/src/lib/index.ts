@@ -3,6 +3,25 @@
  * Re-exports all library functions for convenient imports
  */
 
+// Logger
+export {
+  logger,
+  createLogger,
+  authLogger,
+  storageLogger,
+  apiLogger,
+  webhookLogger,
+} from './logger';
+
+// Retry
+export {
+  retry,
+  retryStorage,
+  retryHttp,
+} from './retry';
+
+export type { RetryOptions } from './retry';
+
 // Auth
 export {
   PASSWORD_REQUIREMENTS,
@@ -45,17 +64,31 @@ export {
   getSubmission,
   deleteSubmission,
   deleteAllSubmissions,
+  getSubmissionsPaginated,
 } from "./storage";
 
 // Storage types
 export type {
   User,
   Form,
+  FormField,
   FormSettings,
   Submission,
   ApiKeyData,
   TokenData,
+  PaginatedResult,
 } from "./storage";
+
+// Analytics
+export {
+  getFormAnalytics,
+  incrementFormView,
+  recordSubmission,
+  getFormAnalyticsRange,
+  aggregateAnalytics,
+} from "./analytics";
+
+export type { FormAnalytics } from "./analytics";
 
 // Errors
 export {
@@ -233,3 +266,12 @@ export {
 } from "./stripe";
 
 export type { SubscriptionData } from "./stripe";
+
+// Form Templates
+export {
+  FORM_TEMPLATES,
+  getTemplateById,
+  getTemplatesByCategory,
+} from "./form-templates";
+
+export type { FormTemplate } from "./form-templates";

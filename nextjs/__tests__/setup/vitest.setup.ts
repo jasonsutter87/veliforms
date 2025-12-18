@@ -28,7 +28,7 @@ vi.mock('next/server', async () => {
 // Set test environment variables
 beforeAll(() => {
   process.env.JWT_SECRET = 'test-jwt-secret-for-testing-only-min-32-chars';
-  process.env.NODE_ENV = 'test';
+  (process.env as { NODE_ENV: string }).NODE_ENV = 'test';
   process.env.NETLIFY_BLOBS_CONTEXT = 'dev';
 });
 

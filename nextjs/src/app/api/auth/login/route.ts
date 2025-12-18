@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword, createToken } from "@/lib/auth";
 import { getUser } from "@/lib/storage";
+import { authLogger } from "@/lib/logger";
 import {
   checkRateLimit,
   getRateLimitHeaders,
@@ -31,9 +32,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let email = '';
   try {
     const body = await req.json();
-    const { email, password } = body;
+    email = body.email;
+    const { password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -132,7 +135,7 @@ export async function POST(req: NextRequest) {
       { headers: getRateLimitHeaders(rateLimit) }
     );
   } catch (err) {
-    console.error("Login error:", err);
+    authLogger.error({ err, email }, 'Login failed');
     return errorResponse(ErrorCodes.SERVER_ERROR, {
       message: "Login failed",
     });

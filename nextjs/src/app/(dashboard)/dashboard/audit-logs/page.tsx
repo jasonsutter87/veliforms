@@ -310,8 +310,9 @@ function LogDetails({
 
   // Default: show first key-value pair
   const entries = Object.entries(details);
-  if (entries.length > 0) {
-    const [key, value] = entries[0];
+  const firstEntry = entries[0];
+  if (firstEntry) {
+    const [key, value] = firstEntry;
     return (
       <span>
         {key}: {String(value)}

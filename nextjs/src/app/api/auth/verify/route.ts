@@ -14,10 +14,11 @@ import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 
 async function handleVerification(req: NextRequest, token: string | null) {
-  // Rate limit
+  // Rate limit: 10 requests per hour
   const rateLimit = await checkRateLimit(req, {
     keyPrefix: "verify",
     maxRequests: 10,
+    windowMs: 60 * 60 * 1000, // 1 hour
   });
 
   if (!rateLimit.allowed) {

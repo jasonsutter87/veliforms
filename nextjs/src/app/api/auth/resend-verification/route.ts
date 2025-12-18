@@ -20,10 +20,11 @@ import {
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 
 export async function POST(req: NextRequest) {
-  // Strict rate limit for resend (2 per minute)
+  // Strict rate limit for resend (3 per hour)
   const rateLimit = await checkRateLimit(req, {
     keyPrefix: "resend-verify",
-    maxRequests: 2,
+    maxRequests: 3,
+    windowMs: 60 * 60 * 1000, // 1 hour
   });
 
   if (!rateLimit.allowed) {

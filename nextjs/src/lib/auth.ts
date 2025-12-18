@@ -12,7 +12,13 @@ import {
 } from "./token-blocklist";
 
 // SECURITY: JWT_SECRET must be set in environment
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT_SECRET environment variable must be set and at least 32 characters');
+  }
+  return secret;
+}
 
 const JWT_EXPIRY = "24h";
 
@@ -127,7 +133,7 @@ export async function verifyPassword(
  * Create JWT token
  */
 export function createToken(payload: { userId: string; email: string }): string {
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, getJwtSecret(), {
     expiresIn: JWT_EXPIRY,
     algorithm: "HS256",
     issuer: "veilforms",
@@ -140,7 +146,7 @@ export function createToken(payload: { userId: string; email: string }): string 
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET, {
+    const decoded = jwt.verify(token, getJwtSecret(), {
       algorithms: ["HS256"],
       issuer: "veilforms",
       audience: "veilforms-api",

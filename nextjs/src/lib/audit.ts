@@ -52,6 +52,15 @@ export const AuditEvents = {
   USER_DATA_EXPORTED: "user.data_exported",
   USER_ACCOUNT_DELETED: "user.account_deleted",
   RETENTION_ENFORCED: "retention.enforced",
+
+  // Team events
+  TEAM_CREATED: "team.created",
+  TEAM_UPDATED: "team.updated",
+  TEAM_DELETED: "team.deleted",
+  TEAM_MEMBER_INVITED: "team.member_invited",
+  TEAM_MEMBER_JOINED: "team.member_joined",
+  TEAM_MEMBER_REMOVED: "team.member_removed",
+  TEAM_MEMBER_ROLE_CHANGED: "team.member_role_changed",
 } as const;
 
 export type AuditEventType = (typeof AuditEvents)[keyof typeof AuditEvents];

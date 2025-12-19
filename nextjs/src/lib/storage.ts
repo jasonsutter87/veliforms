@@ -38,6 +38,8 @@ export interface User {
   forms: string[];
   emailVerified: boolean;
   emailVerifiedAt: string | null;
+  onboardingCompleted: boolean;
+  onboardingStep: number;
 }
 
 export interface FormField {
@@ -66,6 +68,8 @@ export interface Form {
   lastSubmissionAt?: string;
   keyRotatedAt?: string;
   fields?: FormField[];
+  teamId?: string;
+  accessLevel?: 'private' | 'team';
 }
 
 export interface FormSettings {
@@ -137,6 +141,8 @@ export async function createUser(
     forms: [],
     emailVerified: false,
     emailVerifiedAt: null,
+    onboardingCompleted: false,
+    onboardingStep: 0,
   };
 
   await users.setJSON(email.toLowerCase(), user);
@@ -222,6 +228,8 @@ export async function createOAuthUser(
     forms: [],
     emailVerified: true,
     emailVerifiedAt: new Date().toISOString(),
+    onboardingCompleted: false,
+    onboardingStep: 0,
   };
 
   await users.setJSON(email.toLowerCase(), user);
@@ -364,6 +372,8 @@ export async function createForm(
     publicKey: string;
     settings?: Partial<FormSettings>;
     fields?: FormField[];
+    teamId?: string;
+    accessLevel?: 'private' | 'team';
   }
 ): Promise<Form> {
   const forms = store(STORES.FORMS);
@@ -406,6 +416,8 @@ export async function createForm(
     submissionCount: 0,
     createdAt: new Date().toISOString(),
     fields: formData.fields,
+    teamId: formData.teamId,
+    accessLevel: formData.accessLevel || 'private',
   };
 
   await forms.setJSON(formId, form);
@@ -421,6 +433,20 @@ export async function createForm(
   }
   userForms.push(formId);
   await forms.setJSON(userFormsKey, userForms);
+
+  // Add to team's form list if teamId is provided
+  if (formData.teamId) {
+    const teamFormsKey = `team_forms_${formData.teamId}`;
+    let teamForms: string[] = [];
+    try {
+      teamForms =
+        ((await forms.get(teamFormsKey, { type: "json" })) as string[] | null) || [];
+    } catch {
+      teamForms = [];
+    }
+    teamForms.push(formId);
+    await forms.setJSON(teamFormsKey, teamForms);
+  }
 
   return form;
 }
@@ -745,4 +771,28 @@ export async function getSubmissionsPaginated(
     hasMore,
     total: sortedIndex.length,
   };
+}
+
+// === TEAM FORM OPERATIONS ===
+
+/**
+ * Get all forms for a team
+ */
+export async function getTeamForms(teamId: string): Promise<Form[]> {
+  return retryStorage(async () => {
+    const forms = store(STORES.FORMS);
+    const teamFormsKey = `team_forms_${teamId}`;
+
+    try {
+      const formIds =
+        ((await forms.get(teamFormsKey, { type: "json" })) as string[] | null) || [];
+      const formDetails = await Promise.all(formIds.map((id) => getCachedForm(id)));
+      const validForms = formDetails.filter((f): f is Form => f !== null);
+      storageLogger.debug({ teamId, count: validForms.length }, 'Team forms lookup');
+      return validForms;
+    } catch (error) {
+      storageLogger.warn({ teamId, error }, 'Team forms lookup failed');
+      return [];
+    }
+  }, 'getTeamForms');
 }

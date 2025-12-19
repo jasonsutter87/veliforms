@@ -65,6 +65,17 @@ jobs:
           path: nextjs/coverage/
           retention-days: 7
 
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: nextjs/coverage/
+          files: coverage-final.json
+          flags: unittests
+          name: veilforms-coverage
+          fail_ci_if_error: false
+          verbose: true
+
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest

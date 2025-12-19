@@ -1,134 +1,141 @@
 # VeilForms Roadmap
 
-> Privacy-first forms that respect your users.
+> Privacy-first encrypted forms for the enterprise.
+
+---
 
 ## Current Status
 
-**Version**: 1.0.0
-**Tests**: 196 passing
-**Lighthouse**: 92-99 all categories
+**Version:** 2.0.0 (Next.js Migration)
+**Tests:** 617 passing
+**Coverage:** 80%+ target
+**Enterprise Ready:** 68%
 
 ---
 
 ## Completed
 
-### Phase 1: Foundation
-- [x] Hugo static site with Netlify deployment
-- [x] Netlify Functions serverless API
-- [x] Netlify Blob multi-tenant storage
-- [x] Client-side encryption (RSA-2048 + AES-256)
-- [x] JWT authentication with email verification
+### Foundation
+- [x] Next.js 16 App Router architecture
+- [x] Netlify Blobs multi-tenant storage
+- [x] Client-side encryption (RSA-2048 + AES-256-GCM)
+- [x] JWT authentication with OAuth (GitHub, Google)
 - [x] Password reset flow
 - [x] Rate limiting and account lockout
-- [x] Complete documentation site
+- [x] CSRF protection (double-submit cookie)
+- [x] Comprehensive audit logging
 
-### Phase 2: Core API
-- [x] Form CRUD operations
-- [x] Submission endpoints with pagination
-- [x] Webhook support
+### Form Builder
+- [x] Drag-and-drop field ordering (@dnd-kit)
+- [x] 15+ field types (text, email, select, file, etc.)
+- [x] Conditional logic (show/hide fields)
+- [x] Multi-page forms with page breaks
+- [x] File uploads with encryption
+- [x] Form preview modal
+- [x] A/B testing framework
+
+### API & Integrations
+- [x] 65+ API endpoints
+- [x] Webhook delivery with retry logic
+- [x] Zapier integration (metadata payloads)
+- [x] Custom domain support
 - [x] API key management
-- [x] Audit logging
 
-### Phase 3: Dashboard
-- [x] Dashboard with auth guard
-- [x] Forms management UI
-- [x] Submissions viewer with client-side decryption
-- [x] Private key management
-- [x] CSV export
+### Billing
+- [x] Stripe subscription integration
+- [x] Plan tiers (Free, Pro, Team, Enterprise)
+- [x] Usage limits per plan
+- [x] Checkout session creation
 
-### Phase 4: SDK
-- [x] VeilForms client SDK
-- [x] Automatic PII detection
-- [x] Anonymous submission IDs
-- [x] Event system
+### Security
+- [x] XSS protection (DOMPurify)
+- [x] Input validation
+- [x] Idempotency keys
+- [x] Token blocklist
+- [x] Honeypot spam protection
+- [x] reCAPTCHA v3 support
 
-### Phase 5: Production Readiness
-- [x] Environment variable documentation
-- [x] Error handling improvements
-- [x] Health check endpoint
-- [x] SEO optimization (sitemap, schema, robots.txt)
-- [x] Accessibility audit
-- [x] Broken link fixes
-
----
-
-## In Progress
-
-### Stripe Integration
-- [ ] Connect Stripe keys
-- [ ] Test payment flow
-- [ ] Subscription management
-
-### Email Integration
-- [ ] Connect Resend API
-- [ ] Test transactional emails
-- [ ] Email templates
+### Dashboard
+- [x] Forms management
+- [x] Submissions viewer with decryption
+- [x] API keys page
+- [x] Audit logs page
+- [x] Settings page
+- [x] Integrations page
+- [x] Analytics page
+- [x] Embed code generator
 
 ---
 
-## Next Up
+## In Progress (Q1 2026)
 
-### Full Next.js Migration
-- [ ] Create Next.js app (`npx create-next-app@latest`)
-- [ ] Migrate Netlify Functions → `/app/api/` routes
-- [ ] Migrate dashboard HTML/JS → React components
-- [ ] Migrate marketing pages (landing, pricing, docs) → static Next.js pages
-- [ ] Keep SCSS styles, Netlify Blobs storage
-- [ ] Deploy to Vercel or Netlify
-- [ ] Benefit: One stack, better DX, proper bundling, scales properly
+### Critical Path
+- [ ] **Email Service** - Integrate Resend for transactional emails
+- [ ] **Email Verification** - Complete signup flow
+- [ ] **Stripe Webhooks** - Handle subscription events
 
-### Visual Form Builder
-- [ ] Drag-and-drop field ordering
-- [ ] Field types: text, email, textarea, select, checkbox, radio
-- [ ] Live preview
-- [ ] Custom CSS support
-- [ ] Form templates
-
-### SDK Enhancements
-- [ ] TypeScript definitions
-- [ ] React wrapper (`@veilforms/react`)
-- [ ] Vue wrapper (`@veilforms/vue`)
-- [ ] NPM package publishing
-
-### Analytics
-- [ ] Submissions over time chart
-- [ ] Conversion tracking (privacy-preserving)
-- [ ] Drop-off analysis
+### Team Collaboration
+- [ ] Team creation API
+- [ ] Member invitation flow
+- [ ] Role-based permissions (owner, admin, editor, viewer)
+- [ ] Team form sharing
 
 ---
 
-## Future
+## Next Up (Q2 2026)
 
-### Team Features
-- [ ] Invite team members
-- [ ] Role-based access
-- [ ] Activity logs
-- [ ] Shared key vault
+### CRM Integrations
+- [ ] HubSpot integration (contacts, deals)
+- [ ] Salesforce integration (leads, contacts)
+- [ ] Pipedrive integration (deals, persons)
+- [ ] Background job queue (Bull + Redis)
 
-### Enterprise
-- [ ] SSO (SAML/OIDC)
-- [ ] 2FA (TOTP)
-- [ ] Custom data retention
-- [ ] SOC 2 documentation
-- [ ] HIPAA BAA
+### Compliance
+- [ ] GDPR retention enforcement (auto-delete)
+- [ ] Data export improvements
+- [ ] API documentation (OpenAPI 3.0)
+- [ ] Security audit
+
+### Launch
+- [ ] Production deployment
+- [ ] Monitoring & alerting (Sentry)
+- [ ] Load testing
+- [ ] Beta program
+
+---
+
+## Future (Q3-Q4 2026)
+
+### Enterprise Features
+- [ ] SSO (SAML 2.0 / OIDC)
+- [ ] Two-factor authentication (TOTP)
+- [ ] SOC 2 Type II certification
+- [ ] Custom data residency
+- [ ] SLA guarantees
+
+### Platform Expansion
+- [ ] Slack notifications
+- [ ] Google Analytics integration
+- [ ] Advanced analytics dashboard
+- [ ] White-label solution
 
 ### Self-Hosting
 - [ ] Docker image
 - [ ] Kubernetes Helm chart
-- [ ] Terraform modules
-- [ ] One-click deploys (Railway, Render, Fly.io)
+- [ ] One-click deploys (Railway, Render)
 
 ---
 
 ## Backlog
 
-- [ ] Conditional logic (show/hide fields)
-- [ ] Multi-page forms
-- [ ] File uploads (encrypted)
+- [ ] Rich text editor field
+- [ ] Payment collection (Stripe Elements)
 - [ ] Scheduling (open/close dates)
-- [ ] A/B testing
-- [ ] Mobile app
+- [ ] Form versioning UI
+- [ ] Mobile apps (React Native)
 - [ ] Browser extension
+- [ ] Internationalization (i18n)
+- [ ] Accessibility audit (WCAG 2.1)
 
 ---
 
@@ -138,10 +145,29 @@
 |--------|--------|
 | Time to first form | < 5 min |
 | SDK integration | < 30 min |
-| Submission success rate | > 99% |
-| Lighthouse scores | > 90 |
+| Submission success rate | > 99.5% |
+| API response time (p95) | < 200ms |
 | Test coverage | > 80% |
+| Uptime | 99.9% |
 
 ---
 
-*Last updated: December 2024*
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 16, React 19, TypeScript |
+| Styling | SCSS modules |
+| State | Zustand |
+| Forms | React Hook Form |
+| Drag & Drop | @dnd-kit |
+| API | Next.js App Router |
+| Database | Netlify Blobs |
+| Auth | JWT, OAuth 2.0 |
+| Payments | Stripe |
+| Email | Resend (pending) |
+| Testing | Vitest, Playwright |
+
+---
+
+*Last Updated: December 2024*

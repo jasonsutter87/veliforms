@@ -25,6 +25,11 @@ const LIMITS: Record<string, LimitConfig> = {
     window: ONE_HOUR,
     message: "Too many password reset requests. Please wait before trying again.",
   },
+  submissionNotification: {
+    max: 100,
+    window: ONE_HOUR,
+    message: "Too many submission notification emails. Rate limit reached.",
+  },
 };
 
 interface RateLimitData {
@@ -47,7 +52,7 @@ interface EmailRateLimitResult {
  */
 export async function checkEmailRateLimit(
   email: string,
-  type: "verification" | "passwordReset"
+  type: "verification" | "passwordReset" | "submissionNotification"
 ): Promise<EmailRateLimitResult> {
   const limit = LIMITS[type];
   if (!limit) {
@@ -115,7 +120,7 @@ export async function checkEmailRateLimit(
  */
 export function getEmailRateLimitHeaders(
   result: EmailRateLimitResult,
-  type: "verification" | "passwordReset"
+  type: "verification" | "passwordReset" | "submissionNotification"
 ): Record<string, string> {
   const limit = LIMITS[type];
 
@@ -134,7 +139,7 @@ export function getEmailRateLimitHeaders(
  */
 export async function resetEmailRateLimit(
   email: string,
-  type: "verification" | "passwordReset"
+  type: "verification" | "passwordReset" | "submissionNotification"
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   const store = getStore({ name: EMAIL_RATE_LIMIT_STORE, consistency: "strong" });
   const key = `${type}_${email.toLowerCase()}`;

@@ -3,6 +3,7 @@
  */
 
 import { create } from "zustand";
+import type { ConditionalLogic } from "@/lib/conditional-logic";
 
 // Types
 export interface Form {
@@ -30,6 +31,7 @@ export interface FormField {
   placeholder?: string;
   options?: string[];
   validation?: Record<string, unknown>;
+  conditionalLogic?: ConditionalLogic;
 }
 
 export interface Submission {

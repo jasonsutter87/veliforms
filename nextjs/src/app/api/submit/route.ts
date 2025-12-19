@@ -19,6 +19,8 @@ import { isValidFormId, isValidSubmissionId } from "@/lib/validation";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 import { getFormForSubmission } from "@/lib/form-helpers";
 import { getSubmissionLimit } from "@/lib/subscription-limits";
+import { sendSubmissionNotification, sendSubmissionConfirmation, BASE_URL } from "@/lib/email";
+import { checkEmailRateLimit } from "@/lib/email-rate-limit";
 
 const MAX_PAYLOAD_SIZE = 1024 * 1024; // 1MB
 
@@ -105,6 +107,104 @@ async function verifyRecaptcha(
       success: false,
       reason: "Verification service error",
     };
+  }
+}
+
+/**
+ * Extract email field value from encrypted submission payload
+ * Returns null if no email field found (we can't read encrypted data)
+ */
+function findEmailInSubmission(
+  formFields: Array<{ type: string; name: string }> | undefined,
+  payload: unknown
+): string | null {
+  // Since data is encrypted, we can only check if form has email field
+  // The actual email would need to be passed separately or in metadata
+  // For now, return null - this can be enhanced later
+  return null;
+}
+
+/**
+ * Send email notifications for submission (fire and forget)
+ */
+async function handleEmailNotifications(
+  form: {
+    id: string;
+    name: string;
+    userId: string;
+    settings?: { notifications?: { emailOnSubmission: boolean; sendConfirmation: boolean; recipients: string[] } };
+    fields?: Array<{ type: string; name: string }>;
+  },
+  submissionId: string,
+  timestamp: number,
+  userEmail: string | null
+): Promise<void> {
+  try {
+    const notifications = form.settings?.notifications;
+
+    // Skip if notifications not configured
+    if (!notifications) {
+      return;
+    }
+
+    // Send notification to form owner
+    if (notifications.emailOnSubmission && userEmail) {
+      // Check rate limit
+      const rateLimit = await checkEmailRateLimit(userEmail, "submissionNotification");
+
+      if (rateLimit.allowed) {
+        const dashboardUrl = `${BASE_URL}/dashboard/forms/${form.id}/submissions/${submissionId}`;
+
+        await sendSubmissionNotification(
+          userEmail,
+          form.name,
+          submissionId,
+          dashboardUrl,
+          timestamp,
+          notifications.recipients
+        ).catch((err) => {
+          apiLogger.warn(
+            { formId: form.id, submissionId, error: err.message },
+            'Failed to send submission notification email'
+          );
+        });
+      } else {
+        apiLogger.warn(
+          { formId: form.id, email: userEmail, resetAt: rateLimit.resetAt },
+          'Email rate limit exceeded for submission notifications'
+        );
+      }
+    }
+
+    // Send confirmation to respondent
+    if (notifications.sendConfirmation) {
+      // Extract respondent email from submission
+      // Note: This requires the email to be in plain metadata or form structure
+      const respondentEmail = findEmailInSubmission(form.fields, {});
+
+      if (respondentEmail) {
+        await sendSubmissionConfirmation(
+          respondentEmail,
+          form.name
+        ).catch((err) => {
+          apiLogger.warn(
+            { formId: form.id, submissionId, error: err.message },
+            'Failed to send confirmation email to respondent'
+          );
+        });
+      } else {
+        apiLogger.debug(
+          { formId: form.id, submissionId },
+          'Confirmation email enabled but no email field found in submission'
+        );
+      }
+    }
+  } catch (error) {
+    // Never fail submission due to email errors
+    apiLogger.error(
+      { formId: form.id, submissionId, error },
+      'Email notification handler error'
+    );
   }
 }
 
@@ -364,6 +464,16 @@ export async function POST(req: NextRequest) {
         }
       );
     }
+
+    // Send email notifications (async, don't wait)
+    handleEmailNotifications(
+      form,
+      submissionId,
+      submission.timestamp,
+      user?.email || null
+    ).catch((err) => {
+      // Error already logged in handleEmailNotifications
+    });
 
     // Prepare success response
     const successResponse = {

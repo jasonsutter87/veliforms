@@ -323,15 +323,25 @@ export default function FormDetailPage() {
               Add this script to your website to enable form submissions.
             </p>
             <div className="embed-code">
-              <pre>{`<script src="https://veilforms.com/js/veilforms-1.0.0.min.js"></script>
+              <pre>{`<!-- Add to your page where you want the form -->
+<div id="veilforms-container"></div>
+
+<!-- VeilForms SDK -->
+<script src="https://veilforms.com/sdk/veilforms-1.0.0.min.js"></script>
 <script>
-  VeilForms.init('${currentForm.id}', {
-    publicKey: ${JSON.stringify(currentForm.publicKey)}
+  const vf = new VeilForms({
+    formId: '${currentForm.id}',
+    endpoint: 'https://veilforms.com',
+    onSubmit: (result) => {
+      console.log('Form submitted:', result);
+    }
   });
+
+  vf.init('veilforms-container');
 </script>`}</pre>
               <button
                 className="btn btn-secondary copy-btn"
-                onClick={() => copyToClipboard(`<script src="https://veilforms.com/js/veilforms-1.0.0.min.js"></script>\n<script>\n  VeilForms.init('${currentForm.id}', {\n    publicKey: ${JSON.stringify(currentForm.publicKey)}\n  });\n</script>`)}
+                onClick={() => copyToClipboard(`<!-- Add to your page where you want the form -->\n<div id="veilforms-container"></div>\n\n<!-- VeilForms SDK -->\n<script src="https://veilforms.com/sdk/veilforms-1.0.0.min.js"></script>\n<script>\n  const vf = new VeilForms({\n    formId: '${currentForm.id}',\n    endpoint: 'https://veilforms.com',\n    onSubmit: (result) => {\n      console.log('Form submitted:', result);\n    }\n  });\n  \n  vf.init('veilforms-container');\n</script>`)}
               >
                 Copy
               </button>

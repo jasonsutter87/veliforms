@@ -13,6 +13,7 @@ import { FieldProperties } from "./FieldProperties";
 import { SortableField } from "./SortableField";
 import type { FormField } from "@/store/dashboard";
 import { useHistory } from "@/hooks/useHistory";
+import { cleanupDeletedFieldReferences } from "@/lib/conditional-logic";
 
 interface FormBuilderProps {
   formId: string;
@@ -109,7 +110,11 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
 
   // Delete field - uses functional update to avoid dependency on fields
   const handleDeleteField = useCallback((id: string) => {
-    setFields(fields => fields.filter((f) => f.id !== id));
+    setFields(fields => {
+      const filtered = fields.filter((f) => f.id !== id);
+      // Clean up any conditional logic references to the deleted field
+      return cleanupDeletedFieldReferences(filtered, id);
+    });
     if (selectedFieldId === id) {
       setSelectedFieldId(null);
     }
@@ -258,6 +263,7 @@ export function FormBuilder({ formId, initialFields = [], onSave, onBack }: Form
           {selectedField && (
             <FieldProperties
               field={selectedField}
+              allFields={fields}
               onUpdate={(updates) => handleUpdateField(selectedField.id, updates)}
               onClose={() => setSelectedFieldId(null)}
             />

@@ -60,6 +60,16 @@ export default function SettingsPage() {
   const [importPassword, setImportPassword] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null);
 
+  // GDPR - Data Export
+  const [exportLoading, setExportLoading] = useState(false);
+
+  // GDPR - Account Deletion
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
   // Handle password input change
   const handleNewPasswordChange = (value: string) => {
     setNewPassword(value);
@@ -235,6 +245,77 @@ export default function SettingsPage() {
     // This would decrypt and import keys
     alert("Key import functionality - implementation pending");
     setImportModalOpen(false);
+  };
+
+  // Handle data export (GDPR)
+  const handleDataExport = async () => {
+    setExportLoading(true);
+    try {
+      const token = localStorage.getItem("veilforms_token");
+      const response = await fetch("/api/user/export", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to export data");
+      }
+
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `veilforms-data-export-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      alert("Data exported successfully!");
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  // Handle account deletion (GDPR)
+  const handleDeleteAccount = async () => {
+    setDeleteError("");
+    setDeleteLoading(true);
+
+    try {
+      const token = localStorage.getItem("veilforms_token");
+      const response = await fetch("/api/user/account", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          password: deletePassword,
+          confirmation: deleteConfirmation,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete account");
+      }
+
+      // Clear local storage and redirect to homepage
+      localStorage.removeItem("veilforms_token");
+      alert("Your account has been permanently deleted. You will now be redirected to the homepage.");
+      window.location.href = "/";
+    } catch (err) {
+      setDeleteError((err as Error).message);
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -527,16 +608,27 @@ export default function SettingsPage() {
         <div className="danger-item">
           <div>
             <strong>Export All Data</strong>
-            <p>Download all your forms and submissions as a JSON file</p>
+            <p>Download all your forms and submissions as a JSON file (GDPR compliant)</p>
           </div>
-          <button className="btn btn-secondary">Export Data</button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleDataExport}
+            disabled={exportLoading}
+          >
+            {exportLoading ? "Exporting..." : "Export Data"}
+          </button>
         </div>
         <div className="danger-item">
           <div>
             <strong>Delete Account</strong>
-            <p>Permanently delete your account and all associated data</p>
+            <p>Permanently delete your account and all associated data (cannot be undone)</p>
           </div>
-          <button className="btn btn-danger">Delete Account</button>
+          <button
+            className="btn btn-danger"
+            onClick={() => setDeleteModalOpen(true)}
+          >
+            Delete Account
+          </button>
         </div>
       </div>
 
@@ -665,6 +757,87 @@ export default function SettingsPage() {
               </button>
               <button className="btn btn-primary" onClick={handleImportKeys}>
                 Import Keys
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {deleteModalOpen && (
+        <div className="modal" style={{ display: "flex" }}>
+          <div
+            className="modal-backdrop"
+            onClick={() => setDeleteModalOpen(false)}
+          ></div>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Delete Account</h2>
+              <button
+                className="modal-close"
+                onClick={() => setDeleteModalOpen(false)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="modal-body">
+              {deleteError && <div className="error-message">{deleteError}</div>}
+              <div className="warning-box" style={{ marginBottom: "20px" }}>
+                <strong>Warning: This action cannot be undone!</strong>
+                <p>
+                  Deleting your account will permanently remove:
+                </p>
+                <ul>
+                  <li>Your user account</li>
+                  <li>All forms you have created</li>
+                  <li>All submissions to your forms</li>
+                  <li>All API keys</li>
+                  <li>All audit logs</li>
+                  <li>Your subscription (if active)</li>
+                </ul>
+              </div>
+              {user?.email && !user.email.includes("oauth") && (
+                <div className="form-group">
+                  <label htmlFor="delete-password">Confirm Password</label>
+                  <input
+                    type="password"
+                    id="delete-password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+              )}
+              <div className="form-group">
+                <label htmlFor="delete-confirmation">
+                  Type <strong>DELETE MY ACCOUNT</strong> to confirm
+                </label>
+                <input
+                  type="text"
+                  id="delete-confirmation"
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  placeholder="DELETE MY ACCOUNT"
+                  required
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading || deleteConfirmation !== "DELETE MY ACCOUNT"}
+              >
+                {deleteLoading ? "Deleting..." : "Delete My Account"}
               </button>
             </div>
           </div>

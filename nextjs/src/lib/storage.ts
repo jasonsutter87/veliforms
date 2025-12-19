@@ -12,6 +12,7 @@ import {
   invalidateUserCache,
   invalidateFormCache,
 } from "./cache";
+import type { ConditionalLogic } from "./conditional-logic";
 
 // Store names
 const STORES = {
@@ -48,6 +49,7 @@ export interface FormField {
   placeholder?: string;
   options?: string[];
   validation?: Record<string, unknown>;
+  conditionalLogic?: ConditionalLogic;
 }
 
 export interface Form {
@@ -79,6 +81,11 @@ export interface FormSettings {
       secretKey: string;
       threshold: number;
     };
+  };
+  notifications?: {
+    emailOnSubmission: boolean;   // notify form owner on each submission
+    sendConfirmation: boolean;     // send confirmation to respondent
+    recipients: string[];          // additional email addresses to notify
   };
   [key: string]: unknown;
 }
@@ -388,6 +395,11 @@ export async function createForm(
           threshold:
             formData.settings?.spamProtection?.recaptcha?.threshold || 0.5,
         },
+      },
+      notifications: {
+        emailOnSubmission: formData.settings?.notifications?.emailOnSubmission !== false,
+        sendConfirmation: formData.settings?.notifications?.sendConfirmation || false,
+        recipients: formData.settings?.notifications?.recipients || [],
       },
       ...formData.settings,
     },

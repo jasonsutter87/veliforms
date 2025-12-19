@@ -47,6 +47,11 @@ export const AuditEvents = {
   SUBSCRIPTION_REACTIVATED: "subscription.reactivated",
   PAYMENT_SUCCEEDED: "payment.succeeded",
   PAYMENT_FAILED: "payment.failed",
+
+  // GDPR events
+  USER_DATA_EXPORTED: "user.data_exported",
+  USER_ACCOUNT_DELETED: "user.account_deleted",
+  RETENTION_ENFORCED: "retention.enforced",
 } as const;
 
 export type AuditEventType = (typeof AuditEvents)[keyof typeof AuditEvents];

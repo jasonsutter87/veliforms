@@ -23,6 +23,7 @@ import { sendSubmissionNotification, sendSubmissionConfirmation, BASE_URL } from
 import { checkEmailRateLimit } from "@/lib/email-rate-limit";
 import { storeEncryptedFile, validateFileSize, validateFileType, FILE_STORAGE_CONFIG } from "@/lib/file-storage";
 import type { EncryptedFileMetadata } from "@/lib/file-storage";
+import { assignVariant, type ABTest, type VariantAssignment } from "@/lib/ab-testing";
 
 const MAX_PAYLOAD_SIZE = 1024 * 1024; // 1MB
 
@@ -124,6 +125,123 @@ function findEmailInSubmission(
   // The actual email would need to be passed separately or in metadata
   // For now, return null - this can be enhanced later
   return null;
+}
+
+/**
+ * Get active A/B test for a form
+ */
+async function getActiveABTest(formId: string): Promise<ABTest | null> {
+  const abTestStore = getStore({ name: "vf-ab-tests", consistency: "strong" });
+  const indexKey = `form_tests_${formId}`;
+
+  try {
+    const testIds =
+      ((await abTestStore.get(indexKey, { type: "json" })) as string[] | null) || [];
+
+    // Find first running test
+    for (const testId of testIds) {
+      const test = (await abTestStore.get(`test_${testId}`, {
+        type: "json",
+      })) as ABTest | null;
+      if (test && test.status === "running") {
+        return test;
+      }
+    }
+    return null;
+  } catch (error) {
+    apiLogger.warn({ formId, error }, "Failed to check for active A/B test");
+    return null;
+  }
+}
+
+/**
+ * Get or create variant assignment for a user
+ */
+async function getOrAssignVariant(
+  test: ABTest,
+  userId: string
+): Promise<{ variantId: string | null; isNewAssignment: boolean }> {
+  const abTestStore = getStore({ name: "vf-ab-tests", consistency: "strong" });
+  const assignmentKey = `assignment_${test.id}_${userId}`;
+
+  try {
+    // Check for existing assignment
+    const existing = (await abTestStore.get(assignmentKey, {
+      type: "json",
+    })) as VariantAssignment | null;
+
+    if (existing) {
+      return { variantId: existing.variantId, isNewAssignment: false };
+    }
+
+    // Assign new variant
+    const { variantId, inTest } = assignVariant(test, userId);
+
+    if (!inTest || !variantId) {
+      return { variantId: null, isNewAssignment: false };
+    }
+
+    // Store assignment
+    const assignment: VariantAssignment = {
+      testId: test.id,
+      variantId,
+      userId,
+      assignedAt: Date.now(),
+    };
+    await abTestStore.setJSON(assignmentKey, assignment);
+
+    return { variantId, isNewAssignment: true };
+  } catch (error) {
+    apiLogger.error({ testId: test.id, userId, error }, "Variant assignment failed");
+    return { variantId: null, isNewAssignment: false };
+  }
+}
+
+/**
+ * Update A/B test metrics (impressions and conversions)
+ */
+async function updateABTestMetrics(
+  test: ABTest,
+  variantId: string,
+  isImpression: boolean,
+  isConversion: boolean
+): Promise<void> {
+  const abTestStore = getStore({ name: "vf-ab-tests", consistency: "strong" });
+
+  try {
+    // Find the variant to update
+    const variantIndex = test.variants.findIndex((v) => v.id === variantId);
+    if (variantIndex === -1) {
+      apiLogger.warn({ testId: test.id, variantId }, "Variant not found in test");
+      return;
+    }
+
+    // Update metrics
+    if (isImpression) {
+      test.variants[variantIndex].impressions += 1;
+    }
+    if (isConversion) {
+      test.variants[variantIndex].conversions += 1;
+    }
+
+    // Save updated test
+    await abTestStore.setJSON(`test_${test.id}`, test);
+
+    apiLogger.debug(
+      {
+        testId: test.id,
+        variantId,
+        impressions: test.variants[variantIndex].impressions,
+        conversions: test.variants[variantIndex].conversions,
+      },
+      "Updated A/B test metrics"
+    );
+  } catch (error) {
+    apiLogger.error(
+      { testId: test.id, variantId, error },
+      "Failed to update A/B test metrics"
+    );
+  }
 }
 
 /**
@@ -258,7 +376,7 @@ export async function POST(req: NextRequest) {
   try {
     formId = body.formId;
     submissionId = body.submissionId;
-    const { payload, files, timestamp, meta, spamProtection } = body;
+    const { payload, files, timestamp, meta, spamProtection, abTest } = body;
 
     // Validate required fields
     if (!formId || !submissionId || !payload) {
@@ -426,6 +544,46 @@ export async function POST(req: NextRequest) {
       delete payload.key;
     }
 
+    // A/B Testing: Check for active test and track metrics
+    let activeTest: ABTest | null = null;
+    let assignedVariantId: string | null = null;
+
+    // Check if there's an active A/B test for this form
+    activeTest = await getActiveABTest(formId);
+
+    if (activeTest) {
+      // Get user ID from abTest data (client should send this for consistency)
+      const userId = abTest?.userId || submissionId; // Fallback to submissionId as anonymous ID
+
+      // Get or assign variant
+      const { variantId, isNewAssignment } = await getOrAssignVariant(
+        activeTest,
+        userId
+      );
+
+      assignedVariantId = variantId;
+
+      if (variantId) {
+        // Track impression if this is a new assignment
+        if (isNewAssignment) {
+          await updateABTestMetrics(activeTest, variantId, true, false);
+        }
+
+        // Track conversion (submission completed)
+        await updateABTestMetrics(activeTest, variantId, false, true);
+
+        apiLogger.info(
+          {
+            formId,
+            testId: activeTest.id,
+            variantId,
+            isNewAssignment,
+          },
+          "A/B test metrics updated"
+        );
+      }
+    }
+
     // Get blob store for this form
     const store = getStore({ name: `veilforms-${formId}`, consistency: "strong" });
 
@@ -442,6 +600,15 @@ export async function POST(req: NextRequest) {
         userAgent: req.headers.get("user-agent")?.substring(0, 200) || "unknown",
         region: req.headers.get("x-vercel-ip-country") || "unknown",
         ...meta,
+        // Include A/B test info if applicable
+        ...(activeTest && assignedVariantId
+          ? {
+              abTest: {
+                testId: activeTest.id,
+                variantId: assignedVariantId,
+              },
+            }
+          : {}),
       },
     };
 
@@ -542,6 +709,38 @@ export async function POST(req: NextRequest) {
     ).catch((err) => {
       // Error already logged in handleEmailNotifications
     });
+
+    // CRM INTEGRATIONS: Sync to connected CRMs (async, don't wait)
+    // NOTE: CRM integrations follow same pattern as Zapier - metadata only by default
+    // Full data sync requires user's private key (see CRM_INTEGRATION_GUIDE.md)
+    //
+    // Uncomment this section when CRM sync library is ready:
+    /*
+    try {
+      const { getFormIntegrations } = await import("@/lib/storage");
+      const formIntegrations = await getFormIntegrations(formId);
+      const enabledIntegrations = formIntegrations.filter(
+        (fi) => fi.enabled && fi.syncOnSubmit
+      );
+
+      if (enabledIntegrations.length > 0) {
+        const { syncToCRM } = await import("@/lib/crm-sync");
+
+        for (const formInt of enabledIntegrations) {
+          // Sync metadata only (secure mode, no private key needed)
+          syncToCRM(formInt, submission.meta || {}).catch((err) => {
+            apiLogger.error(
+              { formId, submissionId, integrationId: formInt.id, error: err.message },
+              "CRM sync error"
+            );
+          });
+        }
+      }
+    } catch (err) {
+      // CRM integration optional - don't fail submission
+      apiLogger.warn({ formId, submissionId, error: err }, "CRM integration not available");
+    }
+    */
 
     // Prepare success response
     const successResponse = {

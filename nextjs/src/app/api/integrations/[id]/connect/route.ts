@@ -16,14 +16,14 @@ const SUPPORTED_INTEGRATIONS = ["salesforce", "hubspot", "pipedrive", "zapier", 
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authResult = await requireAuth(req);
   if (!authResult.authenticated) {
     return errorResponse(ErrorCodes.AUTH_TOKEN_MISSING);
   }
 
-  const { id } = params;
+  const { id } = await params;
   const userId = authResult.userId;
 
   if (!SUPPORTED_INTEGRATIONS.includes(id)) {

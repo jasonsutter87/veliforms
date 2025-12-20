@@ -15,14 +15,14 @@ import crypto from "crypto";
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string; webhookId: string } }
+  { params }: { params: Promise<{ id: string; webhookId: string }> }
 ) {
   const authResult = await requireAuth(req);
   if (!authResult.authenticated) {
     return errorResponse(ErrorCodes.AUTH_TOKEN_MISSING);
   }
 
-  const { id: formId, webhookId } = params;
+  const { id: formId, webhookId } = await params;
 
   try {
     const webhooks = formWebhooks.get(formId) || [];

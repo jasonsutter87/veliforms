@@ -7,21 +7,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { apiLogger } from "@/lib/logger";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
-import { userIntegrations, ConnectedIntegration } from "../route";
+import { userIntegrations } from "../route";
 
 /**
  * GET /api/integrations/[id] - Get integration details
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authResult = await requireAuth(req);
   if (!authResult.authenticated) {
     return errorResponse(ErrorCodes.AUTH_TOKEN_MISSING);
   }
 
-  const { id } = params;
+  const { id } = await params;
   const userId = authResult.userId;
 
   try {
@@ -47,14 +47,14 @@ export async function GET(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authResult = await requireAuth(req);
   if (!authResult.authenticated) {
     return errorResponse(ErrorCodes.AUTH_TOKEN_MISSING);
   }
 
-  const { id } = params;
+  const { id } = await params;
   const userId = authResult.userId;
 
   try {

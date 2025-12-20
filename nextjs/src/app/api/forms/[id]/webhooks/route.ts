@@ -29,14 +29,14 @@ interface Webhook {
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authResult = await requireAuth(req);
   if (!authResult.authenticated) {
     return errorResponse(ErrorCodes.AUTH_TOKEN_MISSING);
   }
 
-  const { id: formId } = params;
+  const { id: formId } = await params;
 
   try {
     const webhooks = formWebhooks.get(formId) || [];
@@ -53,14 +53,14 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authResult = await requireAuth(req);
   if (!authResult.authenticated) {
     return errorResponse(ErrorCodes.AUTH_TOKEN_MISSING);
   }
 
-  const { id: formId } = params;
+  const { id: formId } = await params;
 
   try {
     const body = await req.json();

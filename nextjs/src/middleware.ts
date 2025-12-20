@@ -58,6 +58,11 @@ async function handleCustomDomain(request: NextRequest): Promise<NextResponse | 
     return null;
   }
 
+  // Skip Netlify preview/deploy domains
+  if (hostname.endsWith('.netlify.app')) {
+    return null;
+  }
+
   // Extract the clean domain (remove port if present)
   const domain = hostname.split(':')[0] ?? hostname;
 

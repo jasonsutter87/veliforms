@@ -18,9 +18,11 @@ import { logAudit, AuditEvents, getAuditContext } from "@/lib/audit";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 import { sendEmail } from "@/lib/email";
 
-export const GET = authRoute(async (req, { user, params }) => {
+type RouteParams = { params: Promise<{ id: string }> };
+
+export const GET = authRoute<RouteParams>(async (req, { user }, routeCtx) => {
   try {
-    const teamId = params.id as string;
+    const { id: teamId } = await routeCtx!.params;
 
     // Verify user is a member
     const isMember = await hasTeamPermission(teamId, user.userId, 'forms:view');
@@ -59,9 +61,9 @@ export const GET = authRoute(async (req, { user, params }) => {
   }
 }, { rateLimit: { keyPrefix: "teams-api", maxRequests: 60 } });
 
-export const POST = authRoute(async (req, { user, params }) => {
+export const POST = authRoute<RouteParams>(async (req, { user }, routeCtx) => {
   try {
-    const teamId = params.id as string;
+    const { id: teamId } = await routeCtx!.params;
     const body = await req.json();
     const { email, role = 'viewer' } = body;
 

@@ -12,9 +12,11 @@ import { logAudit, AuditEvents, getAuditContext } from "@/lib/audit";
 import { sanitizeString } from "@/lib/validation";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 
-export const GET = authRoute(async (req, { user, params }) => {
+type RouteParams = { params: Promise<{ id: string }> };
+
+export const GET = authRoute<RouteParams>(async (req, { user }, routeCtx) => {
   try {
-    const teamId = params.id as string;
+    const { id: teamId } = await routeCtx!.params;
 
     // Get team
     const team = await getTeam(teamId);
@@ -41,9 +43,9 @@ export const GET = authRoute(async (req, { user, params }) => {
   }
 }, { rateLimit: { keyPrefix: "teams-api", maxRequests: 60 } });
 
-export const PUT = authRoute(async (req, { user, params }) => {
+export const PUT = authRoute<RouteParams>(async (req, { user }, routeCtx) => {
   try {
-    const teamId = params.id as string;
+    const { id: teamId } = await routeCtx!.params;
     const body = await req.json();
 
     // Get team
@@ -109,9 +111,9 @@ export const PUT = authRoute(async (req, { user, params }) => {
   csrf: true
 });
 
-export const DELETE = authRoute(async (req, { user, params }) => {
+export const DELETE = authRoute<RouteParams>(async (req, { user }, routeCtx) => {
   try {
-    const teamId = params.id as string;
+    const { id: teamId } = await routeCtx!.params;
 
     // Get team
     const team = await getTeam(teamId);

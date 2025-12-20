@@ -16,10 +16,11 @@ import {
 import { logAudit, AuditEvents, getAuditContext } from "@/lib/audit";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 
-export const PUT = authRoute(async (req, { user, params }) => {
+type RouteParams = { params: Promise<{ id: string; userId: string }> };
+
+export const PUT = authRoute<RouteParams>(async (req, { user }, routeCtx) => {
   try {
-    const teamId = params.id as string;
-    const targetUserId = params.userId as string;
+    const { id: teamId, userId: targetUserId } = await routeCtx!.params;
     const body = await req.json();
     const { role } = body;
 
@@ -93,10 +94,9 @@ export const PUT = authRoute(async (req, { user, params }) => {
   csrf: true
 });
 
-export const DELETE = authRoute(async (req, { user, params }) => {
+export const DELETE = authRoute<RouteParams>(async (req, { user }, routeCtx) => {
   try {
-    const teamId = params.id as string;
-    const targetUserId = params.userId as string;
+    const { id: teamId, userId: targetUserId } = await routeCtx!.params;
 
     // Get team
     const team = await getTeam(teamId);

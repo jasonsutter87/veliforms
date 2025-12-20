@@ -6,8 +6,8 @@ import { isValidFormId } from '@/lib/validation';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-export const GET = authRoute(async (req: NextRequest, { user, params }) => {
-  const { id: formId } = await params;
+export const GET = authRoute<RouteParams>(async (req: NextRequest, { user }, routeCtx) => {
+  const { id: formId } = await routeCtx!.params;
 
   if (!isValidFormId(formId)) {
     return NextResponse.json({ error: 'Invalid form ID' }, { status: 400 });

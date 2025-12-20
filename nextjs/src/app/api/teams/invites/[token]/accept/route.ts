@@ -10,9 +10,11 @@ import { getUserById } from "@/lib/storage";
 import { logAudit, AuditEvents, getAuditContext } from "@/lib/audit";
 import { errorResponse, ErrorCodes } from "@/lib/errors";
 
-export const POST = authRoute(async (req, { user, params }) => {
+type RouteParams = { params: Promise<{ token: string }> };
+
+export const POST = authRoute<RouteParams>(async (req, { user }, routeCtx) => {
   try {
-    const token = params.token as string;
+    const { token } = await routeCtx!.params;
 
     // Get invite
     const invite = await getInviteByToken(token);

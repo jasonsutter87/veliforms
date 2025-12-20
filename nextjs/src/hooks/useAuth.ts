@@ -18,6 +18,7 @@ export interface User {
   emailVerified: boolean;
   subscription: string;
   createdAt: string;
+  onboardingCompleted?: boolean;
 }
 
 interface AuthState {

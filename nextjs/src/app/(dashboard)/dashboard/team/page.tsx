@@ -289,7 +289,7 @@ export default function TeamPage() {
     }
   };
 
-  const currentUserRole = members.find(m => m.userId === user?.userId)?.role;
+  const currentUserRole = members.find(m => m.userId === user?.id)?.role;
   const canManageTeam = currentUserRole === 'owner';
   const canInviteMembers = currentUserRole === 'owner' || currentUserRole === 'admin';
 

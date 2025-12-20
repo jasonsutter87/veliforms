@@ -38,9 +38,9 @@ export const GET = authRoute<RouteParams>(async (req: NextRequest, { user }, rou
 function getDefaultStartDate(): string {
   const date = new Date();
   date.setDate(date.getDate() - 30);
-  return date.toISOString().split('T')[0];
+  return date.toISOString().slice(0, 10);
 }
 
 function getDefaultEndDate(): string {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().slice(0, 10);
 }

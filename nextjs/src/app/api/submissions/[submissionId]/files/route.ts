@@ -11,7 +11,7 @@ import { errorResponse, ErrorCodes } from "@/lib/errors";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { submissionId: string } }
+  { params }: { params: Promise<{ submissionId: string }> }
 ) {
   // Require authentication
   const authResult = await requireAuth(req);
@@ -19,7 +19,7 @@ export async function GET(
     return errorResponse(ErrorCodes.AUTH_TOKEN_MISSING);
   }
 
-  const { submissionId } = params;
+  const { submissionId } = await params;
 
   try {
     // List all files for this submission

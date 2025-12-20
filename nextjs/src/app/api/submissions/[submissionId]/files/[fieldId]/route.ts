@@ -12,7 +12,7 @@ import { errorResponse, ErrorCodes } from "@/lib/errors";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { submissionId: string; fieldId: string } }
+  { params }: { params: Promise<{ submissionId: string; fieldId: string }> }
 ) {
   // Require authentication
   const authResult = await requireAuth(req);
@@ -20,7 +20,7 @@ export async function GET(
     return errorResponse(ErrorCodes.AUTH_TOKEN_MISSING);
   }
 
-  const { submissionId, fieldId } = params;
+  const { submissionId, fieldId } = await params;
   const { searchParams } = new URL(req.url);
   const index = parseInt(searchParams.get("index") || "0", 10);
 
@@ -51,7 +51,7 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { submissionId: string; fieldId: string } }
+  { params }: { params: Promise<{ submissionId: string; fieldId: string }> }
 ) {
   // Require authentication
   const authResult = await requireAuth(req);
@@ -59,7 +59,7 @@ export async function DELETE(
     return errorResponse(ErrorCodes.AUTH_TOKEN_MISSING);
   }
 
-  const { submissionId, fieldId } = params;
+  const { submissionId, fieldId } = await params;
   const { searchParams } = new URL(req.url);
   const index = parseInt(searchParams.get("index") || "0", 10);
 
